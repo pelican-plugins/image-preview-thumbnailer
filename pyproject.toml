@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "pelican-plugin-image-preview-thumbnailer"
 version = "1.0.0"
-description = "Pelican plugin TODO"
+description = "Pelican plugin that insert thumbnails along image links"
 authors = ["Lucas Cimon <lucas.cimon@gmail.com>"]
 license = "AGPL-3.0"
 readme = "README.md"
@@ -38,6 +38,7 @@ classifiers = [
 python = "^3.6"
 beautifulsoup4 = "^4.8.2"
 requests = "^2.22.0"
+Pillow = "^8.3.1"
 
 [tool.poetry.extras]
 markdown = ["markdown"]

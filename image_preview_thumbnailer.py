@@ -78,17 +78,22 @@ def process_link(img_downloader, anchor_tag, config=PluginConfig()):
     thumb_filename = anchor_tag['href'].rsplit('/', 1)[1]
     matching_filepaths = glob(config.fs_thumbs_dir(thumb_filename + '.*'))
     if matching_filepaths:
-        rel_thumb_filepath = matching_filepaths[0].replace(config.output_path + '/', '')
+        fs_thumb_filepath = matching_filepaths[0]
     else:
         LOGGER.info("Thumbnail does not exist => downloading image from %s", anchor_tag['href'])
         tmp_thumb_filepath = img_downloader(anchor_tag['href'], config)
         if not tmp_thumb_filepath:
+            with open(config.fs_thumbs_dir(thumb_filename + '.none'), 'w'):
+                pass
             return
         resize_as_thumbnail(tmp_thumb_filepath, config.thumb_size)
         img_ext = os.path.splitext(tmp_thumb_filepath)[1]
-        os.rename(tmp_thumb_filepath, config.fs_thumbs_dir(thumb_filename + img_ext))
-        rel_thumb_filepath = os.path.join(config.rel_thumbs_dir, thumb_filename + img_ext)
-    #Editing HTML on-the-fly to insert an <img> after the <a>:
+        fs_thumb_filepath = config.fs_thumbs_dir(thumb_filename + img_ext)
+        os.rename(tmp_thumb_filepath, fs_thumb_filepath)
+    if not os.path.getsize(fs_thumb_filepath):
+        return
+    rel_thumb_filepath = fs_thumb_filepath.replace(config.output_path + '/', '')
+    # Editing HTML on-the-fly to insert an <img> after the <a>:
     img = BeautifulSoup('', config.html_parser).new_tag("img")
     img["src"] = rel_thumb_filepath
     anchor_tag.insert_after(img)
@@ -113,12 +118,10 @@ def deviantart_download_img(url, config=PluginConfig()):
 
 def wikipedia_download_img(url, config=PluginConfig()):
     soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
-    anchor_tags = soup.select('.mw-filepage-other-resolutions a')
-    if not anchor_tags:
-        anchor_tags = soup.select('a.internal')
-    if not anchor_tags:
-        LOGGER.error('Wikipedia tag selector failed to find either .mw-filepage-other-resolutions child links or a.internal on %s', url)
-    img_url = anchor_tags[-1]['href']
+    anchor_tag = soup.select_one('a.internal')
+    if not anchor_tag:
+        LOGGER.error('Wikipedia tag selector failed to find a.internal on %s', url)
+    img_url = anchor_tag['href']
     if img_url.startswith('//'):
         img_url = 'https:' + img_url
     out_filepath = download_img(img_url, config)

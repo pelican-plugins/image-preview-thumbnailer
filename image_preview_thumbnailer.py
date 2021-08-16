@@ -11,10 +11,11 @@ from urllib3.exceptions import InsecureRequestWarning
 
 
 DEFAULT_CERT_VERIFY = True
-DEFAULT_THUMB_SIZE = 300
-DEFAULT_THUMBS_DIR = 'thumbnails'
 DEFAULT_ENCODING = 'utf-8'
 DEFAULT_HTML_PARSER = 'html.parser'  # Alt: 'html5lib', 'lxml', 'lxml-xml'
+DEFAULT_INSERTED_HTML = '<img src="{thumb}">'
+DEFAULT_THUMBS_DIR = 'thumbnails'
+DEFAULT_THUMB_SIZE = 300
 DEFAULT_TIMEOUT = 3
 DEFAULT_USER_AGENT = 'pelican-plugin-image-preview-thumbnailer'
 
@@ -53,9 +54,10 @@ class PluginConfig:
         self.output_path = settings.get('OUTPUT_PATH', '')
         self.cert_verify = settings.get('IMAGE_PREVIEW_THUMBNAILER_CERT_VERIFY', DEFAULT_CERT_VERIFY)
         self.encoding = settings.get('IMAGE_PREVIEW_THUMBNAILER_ENCODING', DEFAULT_ENCODING)
-        self.thumb_size = settings.get('IMAGE_PREVIEW_THUMBNAILER_THUMB_SIZE', DEFAULT_THUMB_SIZE)
-        self.rel_thumbs_dir = settings.get('IMAGE_PREVIEW_THUMBNAILER_DIR', DEFAULT_THUMBS_DIR)
         self.html_parser = settings.get('IMAGE_PREVIEW_THUMBNAILER_HTML_PARSER', DEFAULT_HTML_PARSER)
+        self.inserted_html = settings.get('IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML', DEFAULT_INSERTED_HTML)
+        self.rel_thumbs_dir = settings.get('IMAGE_PREVIEW_THUMBNAILER_DIR', DEFAULT_THUMBS_DIR)
+        self.thumb_size = settings.get('IMAGE_PREVIEW_THUMBNAILER_THUMB_SIZE', DEFAULT_THUMB_SIZE)
         self.timeout = settings.get('IMAGE_PREVIEW_THUMBNAILER_REQUEST_TIMEOUT', DEFAULT_TIMEOUT)
         self.user_agent = settings.get('IMAGE_PREVIEW_THUMBNAILER_USERAGENT', DEFAULT_USER_AGENT)
     def fs_thumbs_dir(self, path=''):
@@ -69,19 +71,20 @@ def process_all_links_in_html(html_file, config=PluginConfig()):
     for content in soup.select(config.selector):
         for anchor_tag in content.find_all("a"):
             for url_regex, img_downloader in DOWNLOADERS_PER_URL_REGEX.items():
-                if url_regex.match(anchor_tag['href']):
-                    process_link(img_downloader, anchor_tag, config)
+                match = url_regex.match(anchor_tag['href'])
+                if match:
+                    process_link(img_downloader, anchor_tag, match, config)
                     break
     return str(soup)
 
-def process_link(img_downloader, anchor_tag, config=PluginConfig()):
+def process_link(img_downloader, anchor_tag, match, config=PluginConfig()):
     thumb_filename = anchor_tag['href'].rsplit('/', 1)[1]
     matching_filepaths = glob(config.fs_thumbs_dir(thumb_filename + '.*'))
     if matching_filepaths:
         fs_thumb_filepath = matching_filepaths[0]
     else:
         LOGGER.info("Thumbnail does not exist => downloading image from %s", anchor_tag['href'])
-        tmp_thumb_filepath = img_downloader(anchor_tag['href'], config)
+        tmp_thumb_filepath = img_downloader(match, config)
         if not tmp_thumb_filepath:
             with open(config.fs_thumbs_dir(thumb_filename + '.none'), 'w'):
                 pass
@@ -92,18 +95,26 @@ def process_link(img_downloader, anchor_tag, config=PluginConfig()):
         os.rename(tmp_thumb_filepath, fs_thumb_filepath)
     if not os.path.getsize(fs_thumb_filepath):
         return
-    rel_thumb_filepath = fs_thumb_filepath.replace(config.output_path + '/', '')
+    rel_thumb_filepath = fs_thumb_filepath.replace(config.output_path + '/', '') if config.output_path else fs_thumb_filepath
     # Editing HTML on-the-fly to insert an <img> after the <a>:
-    img = BeautifulSoup('', config.html_parser).new_tag("img")
-    img["src"] = rel_thumb_filepath
-    anchor_tag.insert_after(img)
+    new_elem = BeautifulSoup(config.inserted_html.format(thumb=rel_thumb_filepath), config.html_parser)
+    anchor_tag.insert_after(new_elem)
 
 def resize_as_thumbnail(img_filepath, max_size):
     img = Image.open(img_filepath)
     img.thumbnail((max_size, max_size))
     img.save(img_filepath)
 
-def deviantart_download_img(url, config=PluginConfig()):
+def artstation_download_img(match, config=PluginConfig()):
+    artwork_url = 'https://www.artstation.com/projects/{}.json'.format(match.group(1))
+    resp = http_get(artwork_url, config)
+    img_url = resp.json()['assets'][0]['image_url']
+    out_filepath = download_img(img_url, config)
+    LOGGER.debug("Image downloaded from: %s", img_url)
+    return out_filepath
+
+def deviantart_download_img(match, config=PluginConfig()):
+    url = match.string
     resp = http_get(url, config)
     if b'Mature Content' in resp.content:
         LOGGER.warning('Mature Content detected on DeviantArt page %s', url)
@@ -113,10 +124,11 @@ def deviantart_download_img(url, config=PluginConfig()):
     if not img:
         LOGGER.error('DeviantArt tag selector failed to find an <img> on %s', url)
     out_filepath = download_img(img['src'], config)
-    LOGGER.info("[DeviantArt] Image downloaded from: %s", img['src'])
+    LOGGER.debug("Image downloaded from: %s", img['src'])
     return out_filepath
 
-def wikipedia_download_img(url, config=PluginConfig()):
+def wikipedia_download_img(match, config=PluginConfig()):
+    url = match.string
     soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
     anchor_tag = soup.select_one('a.internal')
     if not anchor_tag:
@@ -125,10 +137,12 @@ def wikipedia_download_img(url, config=PluginConfig()):
     if img_url.startswith('//'):
         img_url = 'https:' + img_url
     out_filepath = download_img(img_url, config)
-    LOGGER.info("[Wikipedia] Image downloaded from: %s", img_url)
+    LOGGER.debug("Image downloaded from: %s", img_url)
     return out_filepath
 
 def download_img(url, config=PluginConfig()):
+    if hasattr(url, 'string'):  # can be either a string or a re.Match object
+        url = url.string
     resp = http_get(url, config)
     ext = {
         'image/gif': '.gif',
@@ -143,14 +157,16 @@ def download_img(url, config=PluginConfig()):
 def http_get(url, config=PluginConfig()):
     with requests.get(url, timeout=config.timeout, verify=config.cert_verify,
                            headers={'User-Agent': config.user_agent}) as response:
+        if response.status_code != 200 and b'captcha' in response.content:
+            LOGGER.warning('CAPTCHA is likely to be required by page %s', url)
         response.raise_for_status()
         return response
 
 DOWNLOADERS_PER_URL_REGEX = {
-    re.compile('https://www.deviantart.com/.+/art/.+'): deviantart_download_img,
-    re.compile('.+wiki(m|p)edia.org/wiki/.+(jpg|png)'): wikipedia_download_img,
-    re.compile('.+.jpe?g'): download_img,
-    re.compile('.+.png'): download_img,
+    re.compile(r'https://www.artstation.com/artwork/(.+)'): artstation_download_img,
+    re.compile(r'https://www.deviantart.com/.+/art/.+'): deviantart_download_img,
+    re.compile(r'.+wiki(m|p)edia.org/wiki/.+(jpg|png)'): wikipedia_download_img,
+    re.compile(r'.+\.(gif|jpe?g|png)'): download_img,
 }
 
 def register():

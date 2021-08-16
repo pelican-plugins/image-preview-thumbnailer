@@ -17,17 +17,29 @@ To enable this plugin:
 ```python
 PLUGINS = [..., 'image_preview_thumbnailer']
 ```
-3. Enable it on the article / pages you wish by inserting this piece of metada
+3. Enable it on the article / pages you wish by inserting this piece of metadata:
 ```yaml
 Image-preview-thumbnailer: $selector
 ```
 
-`$selector` is a CSS selector to target elements this plugin will parse.It can be for example `article` if your Pelican template place your pages content in `<article>` tags,
+`$selector` is a CSS selector to target HTML elements this plugin will parse and look for `<a>` hyperlinks.
+It can be for example `article` if your Pelican template place your pages content in `<article>` tags,
 or just `body` to select the whole page.
+
+### Supported link formats
+Currently this plugin support preview of the following links:
+* "raw" links to GIF/JPEG/PNG images
+* links to **ArtStation** artwork pages
+* links to **DeviantArt** artwork pages
+* links to **Wikipedia/Wikimedia** images
+
+Feel free to submit PRs to add support for more image hosting websites.
 
 ### Configuration
 Available options:
 
+- `IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML` (optional, default: `'<img src="{thumb}">'`) :
+  the HTML code to be inserted after every link (`<a>`) to an image, in order to preview it
 - `IMAGE_PREVIEW_THUMBNAILER_DIR` (optional, default: `thumbnails`) :
   directory where thumbnail images are stored
 - `IMAGE_PREVIEW_THUMBNAILER_THUMB_SIZE` (optional, default: `300`) :
@@ -47,7 +59,7 @@ Available options:
 * the initial idea for this plugin was to just add `🖼️` icons on links to images,
   and then only display thumbnails when hovering on those links.
   A more basic approach of just inserting `<img>` tags was in the end deemed sufficient,
-  but the original mechanism could still be implemented.
+  but the original mechanism could still be implemented with a custom `DEFAULT_INSERTED_HTML` & adequate CSS styling.
 
 ## Contributing
 Contributions are welcome and much appreciated. Every little bit helps. You can contribute by improving the documentation,

@@ -185,6 +185,16 @@ def flickr_download_img(url_match, config=PluginConfig()):
     LOGGER.debug("Image downloaded from: %s", img_url)
     return out_filepath
 
+def opengameart_download_img(url_match, config=PluginConfig()):
+    url = url_match.string
+    soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
+    img = soup.select_one('.right-column img')
+    if not img:
+        raise RuntimeError('OpenGameArt tag selector failed to find an <img> on ' + url)
+    out_filepath = download_img(img['src'], config)
+    LOGGER.debug("Image downloaded from: %s", img['src'])
+    return out_filepath
+
 def wikipedia_download_img(url_match, config=PluginConfig()):
     url = url_match.string
     soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
@@ -233,6 +243,7 @@ DOWNLOADERS_PER_URL_REGEX = {
     re.compile(r'https://www\.deviantart\.com/.+/art/.+'): deviantart_download_img,
     re.compile(r'https://www\.flickr\.com/photos/[^/]+/(?!album).+'): flickr_download_img,
     re.compile(r'.+wiki(m|p)edia\.org/wiki/.+(gif|jpg|png|svg)'): wikipedia_download_img,
+    re.compile(r'https://opengameart\.org/content/.+'): opengameart_download_img,
     re.compile(r'https://www\.wikiart\.org/../.+/.+'): wikiart_download_img,
     re.compile(r'.+\.(gif|jpe?g|png)'): download_img,
 }

@@ -100,6 +100,13 @@ def test_flickr_photostream():
     assert 'src="thumbnails/4860797836.jpg"' in out_html
 
 @pytest.mark.integration
+def test_opengameart():
+    url = 'https://opengameart.org/content/kujasa-the-beginning'
+    out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
+    assert os.path.getsize("thumbnails/kujasa-the-beginning.jpg") > 0
+    assert 'src="thumbnails/kujasa-the-beginning.jpg"' in out_html
+
+@pytest.mark.integration
 def test_wikiart():
     url = 'https://www.wikiart.org/en/john-bauer/d-och-d-tog-tomten-tag-i-tyglarna'
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))

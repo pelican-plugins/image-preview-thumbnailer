@@ -34,6 +34,7 @@ Currently this plugin support preview of the following links:
 * links to [Dafont](https://www.dafont.com) font pages
 * links to [DeviantArt](https://www.deviantart.com) artwork pages
 * links to [Flickr](https://www.flickr.com) photos
+* links to [OpenGameArt](https://opengameart.org) assets
 * links to [WikiArt](https://www.wikiart.org) art pages
 * links to **Wikipedia/Wikimedia** images
 

@@ -30,16 +30,15 @@ LOGGER = logging.getLogger(__name__)
 
 
 def process_all_links(path, context):
-    root_logger_level = logging.root.level
-    if root_logger_level > 0:  # inherit root logger level, if defined
-        LOGGER.setLevel(root_logger_level)
+    if logging.root.level > 0:  # inherit root logger level, if defined
+        LOGGER.setLevel(logging.root.level)
     content = context.get('article') or context.get('page')
     if not content:
         # This plugin currently does not handle static page, like the index
         # Adding support for them should be trivial though
         return
     selector = content.metadata.get('image-preview-thumbnailer')
-    if not selector:
+    if not selector:  # => this plugin has not been enabled on this page
         return
     config = PluginConfig(selector, context)
     if not os.path.exists(config.fs_thumbs_dir()):
@@ -81,24 +80,18 @@ def process_all_links_in_html(html_file, config=PluginConfig()):
                 match = url_regex.match(anchor_tag['href'])
                 if match:
                     process_link(img_downloader, anchor_tag, match, config)
-                    break
+                    break  # no need to test other image downloaders
     return str(soup)
 
 def process_link(img_downloader, anchor_tag, match, config=PluginConfig()):
-    url_frags = anchor_tag['href'].split('/')
-    thumb_filename = url_frags.pop()
-    while thumb_filename in ('in', 'photostream', ''):  # workaround for Flickr URL naming scheme
-        thumb_filename = url_frags.pop()
-    thumb_filename = thumb_filename.split('?', 1)[0]
-    if any(thumb_filename.endswith(ext) for ext in EXT_PER_CONTENT_TYPE.values()):
-        thumb_filename = os.path.splitext(thumb_filename)[0]
+    thumb_filename = extract_thumb_filename(anchor_tag['href'])
     matching_filepaths = glob(config.fs_thumbs_dir(thumb_filename + '.*'))
-    if matching_filepaths:
+    if matching_filepaths:  # => a thumbnail has already been generated
         fs_thumb_filepath = matching_filepaths[0]
     else:
         LOGGER.info("Thumbnail does not exist => downloading image from %s", anchor_tag['href'])
         tmp_thumb_filepath = img_downloader(match, config)
-        if not tmp_thumb_filepath:
+        if not tmp_thumb_filepath:  # => means the downloader failed to retrieve the image in a "supported" case
             with open(config.fs_thumbs_dir(thumb_filename + '.none'), 'w'):
                 pass
             return
@@ -112,6 +105,16 @@ def process_link(img_downloader, anchor_tag, match, config=PluginConfig()):
     # Editing HTML on-the-fly to insert an <img> after the <a>:
     new_elem_html = config.inserted_html.format(thumb=rel_thumb_filepath, link=anchor_tag['href'])
     anchor_tag.insert_after(BeautifulSoup(new_elem_html, config.html_parser))
+
+def extract_thumb_filename(page_url):
+    url_frags = page_url.split('/')
+    thumb_filename = url_frags.pop()
+    while thumb_filename in ('in', 'photostream', ''):  # workaround for Flickr URL naming scheme
+        thumb_filename = url_frags.pop()
+    thumb_filename = thumb_filename.split('?', 1)[0]
+    if any(thumb_filename.endswith(ext) for ext in EXT_PER_CONTENT_TYPE.values()):
+        thumb_filename = os.path.splitext(thumb_filename)[0]
+    return thumb_filename
 
 def resize_as_thumbnail(img_filepath, max_size):
     img = Image.open(img_filepath)

@@ -24,6 +24,7 @@ EXT_PER_CONTENT_TYPE = {
     'image/jpeg': '.jpg',
     'image/jpg': '.jpg',
     'image/png': '.png',
+    'image/svg+xml': '.svg',
 }
 
 LOGGER = logging.getLogger(__name__)
@@ -95,8 +96,9 @@ def process_link(img_downloader, anchor_tag, url_match, config=PluginConfig()):
             with open(config.fs_thumbs_dir(thumb_filename + '.none'), 'w'):
                 pass
             return
-        resize_as_thumbnail(tmp_thumb_filepath, config.thumb_size)
         img_ext = os.path.splitext(tmp_thumb_filepath)[1]
+        if img_ext != '.svg':  # Pillow cannot read SVG files
+            resize_as_thumbnail(tmp_thumb_filepath, config.thumb_size)
         fs_thumb_filepath = config.fs_thumbs_dir(thumb_filename + img_ext)
         os.rename(tmp_thumb_filepath, fs_thumb_filepath)
     if not os.path.getsize(fs_thumb_filepath):  # .none file, meaning no thumbnail could be donwloaded
@@ -227,7 +229,7 @@ DOWNLOADERS_PER_URL_REGEX = {
     re.compile(r'https://www\.dafont\.com/.+\.font.*'): dafont_download_img,
     re.compile(r'https://www\.deviantart\.com/.+/art/.+'): deviantart_download_img,
     re.compile(r'https://www\.flickr\.com/photos/.+/in/photostream/'): flickr_download_img,
-    re.compile(r'.+wiki(m|p)edia\.org/wiki/.+(jpg|png)'): wikipedia_download_img,
+    re.compile(r'.+wiki(m|p)edia\.org/wiki/.+(gif|jpg|png|svg)'): wikipedia_download_img,
     re.compile(r'https://www\.wikiart\.org/../.+/.+'): wikiart_download_img,
     re.compile(r'.+\.(gif|jpe?g|png)'): download_img,
 }

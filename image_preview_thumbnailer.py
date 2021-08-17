@@ -111,8 +111,11 @@ def process_link(img_downloader, anchor_tag, url_match, config=PluginConfig()):
 def extract_thumb_filename(page_url):
     url_frags = page_url.split('/')
     thumb_filename = url_frags.pop()
-    while thumb_filename in ('in', 'photostream', ''):  # workaround for Flickr URL naming scheme
+    # Workarounds for Flickr URL naming scheme:
+    while thumb_filename in ('in', 'photostream', ''):
         thumb_filename = url_frags.pop()
+        if thumb_filename.startswith('album-'):
+            thumb_filename = url_frags.pop()
     thumb_filename = thumb_filename.split('?', 1)[0]
     if any(thumb_filename.endswith(ext) for ext in EXT_PER_CONTENT_TYPE.values()):
         thumb_filename = os.path.splitext(thumb_filename)[0]

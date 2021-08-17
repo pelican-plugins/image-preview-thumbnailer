@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [1.0.3] - not released yet
 ### Added
 * support for GIF & SVG images hosted on Wikimedia
+* extended range of supported Flickr URLs
 
 ## [1.0.2] - 2021-08-17
 ### Added

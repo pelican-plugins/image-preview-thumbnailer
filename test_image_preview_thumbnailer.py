@@ -87,6 +87,13 @@ def test_deviantart_mature_content():
 
 @pytest.mark.integration
 def test_flickr():
+    url = 'https://www.flickr.com/photos/tofuverde/30859168220/'
+    out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
+    assert os.path.getsize("thumbnails/30859168220.jpg") > 0
+    assert 'src="thumbnails/30859168220.jpg"' in out_html
+
+@pytest.mark.integration
+def test_flickr_photostream():
     url = 'https://www.flickr.com/photos/84568447@N00/4860797836/in/photostream/'
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
     assert os.path.getsize("thumbnails/4860797836.jpg") > 0

@@ -228,7 +228,7 @@ DOWNLOADERS_PER_URL_REGEX = {
     re.compile(r'https://www\.behance\.net/gallery/(.+)/.+'): behance_download_img,
     re.compile(r'https://www\.dafont\.com/.+\.font.*'): dafont_download_img,
     re.compile(r'https://www\.deviantart\.com/.+/art/.+'): deviantart_download_img,
-    re.compile(r'https://www\.flickr\.com/photos/.+/in/photostream/'): flickr_download_img,
+    re.compile(r'https://www\.flickr\.com/photos/[^/]+/(?!album).+'): flickr_download_img,
     re.compile(r'.+wiki(m|p)edia\.org/wiki/.+(gif|jpg|png|svg)'): wikipedia_download_img,
     re.compile(r'https://www\.wikiart\.org/../.+/.+'): wikiart_download_img,
     re.compile(r'.+\.(gif|jpe?g|png)'): download_img,

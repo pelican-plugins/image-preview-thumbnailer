@@ -77,20 +77,20 @@ def process_all_links_in_html(html_file, config=PluginConfig()):
     for content in soup.select(config.selector):
         for anchor_tag in content.find_all("a"):
             for url_regex, img_downloader in DOWNLOADERS_PER_URL_REGEX.items():
-                match = url_regex.match(anchor_tag['href'])
-                if match:
-                    process_link(img_downloader, anchor_tag, match, config)
+                url_match = url_regex.match(anchor_tag['href'])
+                if url_match:
+                    process_link(img_downloader, anchor_tag, url_match, config)
                     break  # no need to test other image downloaders
     return str(soup)
 
-def process_link(img_downloader, anchor_tag, match, config=PluginConfig()):
+def process_link(img_downloader, anchor_tag, url_match, config=PluginConfig()):
     thumb_filename = extract_thumb_filename(anchor_tag['href'])
     matching_filepaths = glob(config.fs_thumbs_dir(thumb_filename + '.*'))
     if matching_filepaths:  # => a thumbnail has already been generated
         fs_thumb_filepath = matching_filepaths[0]
     else:
         LOGGER.info("Thumbnail does not exist => downloading image from %s", anchor_tag['href'])
-        tmp_thumb_filepath = img_downloader(match, config)
+        tmp_thumb_filepath = img_downloader(url_match, config)
         if not tmp_thumb_filepath:  # => means the downloader failed to retrieve the image in a "supported" case
             with open(config.fs_thumbs_dir(thumb_filename + '.none'), 'w'):
                 pass
@@ -121,25 +121,25 @@ def resize_as_thumbnail(img_filepath, max_size):
     img.thumbnail((max_size, max_size))
     img.save(img_filepath)
 
-def artstation_download_img(match, config=PluginConfig()):
-    artwork_url = 'https://www.artstation.com/projects/{}.json'.format(match.group(1))
+def artstation_download_img(url_match, config=PluginConfig()):
+    artwork_url = 'https://www.artstation.com/projects/{}.json'.format(url_match.group(1))
     resp = http_get(artwork_url, config)
     img_url = resp.json()['assets'][0]['image_url']
     out_filepath = download_img(img_url, config)
     LOGGER.debug("Image downloaded from: %s", img_url)
     return out_filepath
 
-def behance_download_img(match, config=PluginConfig()):
+def behance_download_img(url_match, config=PluginConfig()):
     # API key from https://github.com/djheru/js-behance-api
-    artwork_url = 'https://www.behance.net/v2/projects/{}?api_key=NdTKNWys9AdBhxMhXnKuxgfzmqvwkg55'.format(match.group(1))
+    artwork_url = 'https://www.behance.net/v2/projects/{}?api_key=NdTKNWys9AdBhxMhXnKuxgfzmqvwkg55'.format(url_match.group(1))
     resp = http_get(artwork_url, config)
     img_url = resp.json()['project']['covers']['404']
     out_filepath = download_img(img_url, config)
     LOGGER.debug("Image downloaded from: %s", img_url)
     return out_filepath
 
-def dafont_download_img(match, config=PluginConfig()):
-    url = match.string
+def dafont_download_img(url_match, config=PluginConfig()):
+    url = url_match.string
     soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
     preview_div = soup.select_one('.preview') or soup.select_one('.preview_l')
     if not preview_div:
@@ -153,8 +153,8 @@ def dafont_download_img(match, config=PluginConfig()):
     LOGGER.debug("Image downloaded from: %s", img_url)
     return out_filepath
 
-def deviantart_download_img(match, config=PluginConfig()):
-    url = match.string
+def deviantart_download_img(url_match, config=PluginConfig()):
+    url = url_match.string
     resp = http_get(url, config)
     if b'>This content is intended for mature audiences<' in resp.content:
         LOGGER.warning('Mature Content detected on DeviantArt page %s', url)
@@ -167,8 +167,8 @@ def deviantart_download_img(match, config=PluginConfig()):
     LOGGER.debug("Image downloaded from: %s", img['src'])
     return out_filepath
 
-def flickr_download_img(match, config=PluginConfig()):
-    url = match.string
+def flickr_download_img(url_match, config=PluginConfig()):
+    url = url_match.string
     soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
     img = soup.select_one('img')
     if not img:
@@ -180,8 +180,8 @@ def flickr_download_img(match, config=PluginConfig()):
     LOGGER.debug("Image downloaded from: %s", img_url)
     return out_filepath
 
-def wikipedia_download_img(match, config=PluginConfig()):
-    url = match.string
+def wikipedia_download_img(url_match, config=PluginConfig()):
+    url = url_match.string
     soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
     anchor_tag = soup.select_one('a.internal')
     if not anchor_tag:
@@ -193,8 +193,8 @@ def wikipedia_download_img(match, config=PluginConfig()):
     LOGGER.debug("Image downloaded from: %s", img_url)
     return out_filepath
 
-def wikiart_download_img(match, config=PluginConfig()):
-    url = match.string
+def wikiart_download_img(url_match, config=PluginConfig()):
+    url = url_match.string
     soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
     img = soup.select_one('.wiki-layout-artist-image-wrapper img')
     if not img:

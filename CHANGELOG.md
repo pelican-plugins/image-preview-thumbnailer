@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.0.3] - not released yet
+## [1.0.3] - 2021-08-17
 ### Added
 * support for [OpenGameArt](https://opengameart.org) pages
 * support for pages with a `<meta property="og:image">` or `<meta property="twitter:image">` properties,

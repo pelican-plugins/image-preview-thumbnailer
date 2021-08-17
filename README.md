@@ -38,7 +38,7 @@ Feel free to submit PRs to add support for more image hosting websites.
 ### Configuration
 Available options:
 
-- `IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML` (optional, default: `'<img src="{thumb}">'`) :
+- `IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML` (optional, default: `<a href="{link}" target="_blank" class="preview-thumbnail"><img src="{thumb}" class="preview-thumbnail"></a>`) :
   the HTML code to be inserted after every link (`<a>`) to an image, in order to preview it
 - `IMAGE_PREVIEW_THUMBNAILER_DIR` (optional, default: `thumbnails`) :
   directory where thumbnail images are stored
@@ -54,6 +54,9 @@ Available options:
   time in seconds allowed for each HTTP linkback request before abandon
 - `IMAGE_PREVIEW_THUMBNAILER_USERAGENT` (optional, default: `pelican-plugin-image-preview-thumbnailer`) :
   the `User-Agent` HTTP header to use while sending notifications.
+
+### Release notes
+_cf._ [CHANGELOG.md](CHANGELOG.md)
 
 ### Features that could be implemented
 * the initial idea for this plugin was to just add `🖼️` icons on links to images,

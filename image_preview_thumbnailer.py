@@ -13,11 +13,17 @@ from urllib3.exceptions import InsecureRequestWarning
 DEFAULT_CERT_VERIFY = True
 DEFAULT_ENCODING = 'utf-8'
 DEFAULT_HTML_PARSER = 'html.parser'  # Alt: 'html5lib', 'lxml', 'lxml-xml'
-DEFAULT_INSERTED_HTML = '<img src="{thumb}">'
+DEFAULT_INSERTED_HTML = '<a href="{link}" target="_blank" class="preview-thumbnail"><img src="{thumb}" class="preview-thumbnail"></a>'
 DEFAULT_THUMBS_DIR = 'thumbnails'
 DEFAULT_THUMB_SIZE = 300
 DEFAULT_TIMEOUT = 3
 DEFAULT_USER_AGENT = 'pelican-plugin-image-preview-thumbnailer'
+
+EXT_PER_CONTENT_TYPE = {
+    'image/gif': '.gif',
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+}
 
 LOGGER = logging.getLogger(__name__)
 
@@ -47,7 +53,7 @@ def process_all_links(path, context):
             html_file.write(edited_html)
 
 class PluginConfig:
-    def __init__(self, selector='article', settings=None):
+    def __init__(self, selector='body', settings=None):
         self.selector = selector
         if settings is None:
             settings = {}
@@ -79,6 +85,8 @@ def process_all_links_in_html(html_file, config=PluginConfig()):
 
 def process_link(img_downloader, anchor_tag, match, config=PluginConfig()):
     thumb_filename = anchor_tag['href'].rsplit('/', 1)[1]
+    if any(thumb_filename.endswith(ext) for ext in EXT_PER_CONTENT_TYPE.values()):
+        thumb_filename = os.path.splitext(thumb_filename)[0]
     matching_filepaths = glob(config.fs_thumbs_dir(thumb_filename + '.*'))
     if matching_filepaths:
         fs_thumb_filepath = matching_filepaths[0]
@@ -93,12 +101,12 @@ def process_link(img_downloader, anchor_tag, match, config=PluginConfig()):
         img_ext = os.path.splitext(tmp_thumb_filepath)[1]
         fs_thumb_filepath = config.fs_thumbs_dir(thumb_filename + img_ext)
         os.rename(tmp_thumb_filepath, fs_thumb_filepath)
-    if not os.path.getsize(fs_thumb_filepath):
+    if not os.path.getsize(fs_thumb_filepath):  # .none file, meaning no thumbnail could be donwloaded
         return
     rel_thumb_filepath = fs_thumb_filepath.replace(config.output_path + '/', '') if config.output_path else fs_thumb_filepath
     # Editing HTML on-the-fly to insert an <img> after the <a>:
-    new_elem = BeautifulSoup(config.inserted_html.format(thumb=rel_thumb_filepath), config.html_parser)
-    anchor_tag.insert_after(new_elem)
+    new_elem_html = config.inserted_html.format(thumb=rel_thumb_filepath, link=anchor_tag['href'])
+    anchor_tag.insert_after(BeautifulSoup(new_elem_html, config.html_parser))
 
 def resize_as_thumbnail(img_filepath, max_size):
     img = Image.open(img_filepath)
@@ -116,7 +124,7 @@ def artstation_download_img(match, config=PluginConfig()):
 def deviantart_download_img(match, config=PluginConfig()):
     url = match.string
     resp = http_get(url, config)
-    if b'Mature Content' in resp.content:
+    if b'>This content is intended for mature audiences<' in resp.content:
         LOGGER.warning('Mature Content detected on DeviantArt page %s', url)
         return None
     soup = BeautifulSoup(resp.content, config.html_parser)
@@ -141,14 +149,10 @@ def wikipedia_download_img(match, config=PluginConfig()):
     return out_filepath
 
 def download_img(url, config=PluginConfig()):
-    if hasattr(url, 'string'):  # can be either a string or a re.Match object
+    if hasattr(url, 'string'):  # can initialy be either a string or a re.Match object
         url = url.string
     resp = http_get(url, config)
-    ext = {
-        'image/gif': '.gif',
-        'image/jpeg': '.jpg',
-        'image/png': '.png',
-    }[resp.headers['Content-Type']]
+    ext = EXT_PER_CONTENT_TYPE[resp.headers['Content-Type']]
     _, out_filepath = mkstemp(ext)
     with open(out_filepath, 'bw') as out_file:
         out_file.write(resp.content)

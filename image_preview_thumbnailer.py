@@ -13,6 +13,7 @@ from urllib3.exceptions import InsecureRequestWarning
 DEFAULT_CERT_VERIFY = True
 DEFAULT_ENCODING = 'utf-8'
 DEFAULT_HTML_PARSER = 'html.parser'  # Alt: 'html5lib', 'lxml', 'lxml-xml'
+DEFAULT_IGNORE_404 = False
 DEFAULT_INSERTED_HTML = '<a href="{link}" target="_blank" class="preview-thumbnail"><img src="{thumb}" class="preview-thumbnail"></a>'
 DEFAULT_THUMBS_DIR = 'thumbnails'
 DEFAULT_THUMB_SIZE = 300
@@ -62,6 +63,7 @@ class PluginConfig:
         self.cert_verify = settings.get('IMAGE_PREVIEW_THUMBNAILER_CERT_VERIFY', DEFAULT_CERT_VERIFY)
         self.encoding = settings.get('IMAGE_PREVIEW_THUMBNAILER_ENCODING', DEFAULT_ENCODING)
         self.html_parser = settings.get('IMAGE_PREVIEW_THUMBNAILER_HTML_PARSER', DEFAULT_HTML_PARSER)
+        self.ignore_404 = settings.get('IMAGE_PREVIEW_THUMBNAILER_IGNORE_404', DEFAULT_IGNORE_404)
         self.inserted_html = settings.get('IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML', DEFAULT_INSERTED_HTML)
         self.rel_thumbs_dir = settings.get('IMAGE_PREVIEW_THUMBNAILER_DIR', DEFAULT_THUMBS_DIR)
         self.thumb_size = settings.get('IMAGE_PREVIEW_THUMBNAILER_THUMB_SIZE', DEFAULT_THUMB_SIZE)
@@ -129,6 +131,8 @@ def resize_as_thumbnail(img_filepath, max_size):
 def artstation_download_img(url_match, config=PluginConfig()):
     artwork_url = 'https://www.artstation.com/projects/{}.json'.format(url_match.group(1))
     resp = http_get(artwork_url, config)
+    if not resp:
+        return None
     img_url = resp.json()['assets'][0]['image_url']
     out_filepath = download_img(img_url, config)
     LOGGER.debug("Image downloaded from: %s", img_url)
@@ -138,6 +142,8 @@ def behance_download_img(url_match, config=PluginConfig()):
     # API key from https://github.com/djheru/js-behance-api
     artwork_url = 'https://www.behance.net/v2/projects/{}?api_key=NdTKNWys9AdBhxMhXnKuxgfzmqvwkg55'.format(url_match.group(1))
     resp = http_get(artwork_url, config)
+    if not resp:
+        return None
     img_url = resp.json()['project']['covers']['404']
     out_filepath = download_img(img_url, config)
     LOGGER.debug("Image downloaded from: %s", img_url)
@@ -145,7 +151,10 @@ def behance_download_img(url_match, config=PluginConfig()):
 
 def dafont_download_img(url_match, config=PluginConfig()):
     url = url_match.string
-    soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
+    resp = http_get(url, config)
+    if not resp:
+        return None
+    soup = BeautifulSoup(resp.content, config.html_parser)
     preview_div = soup.select_one('.preview') or soup.select_one('.preview_l')
     if not preview_div:
         raise RuntimeError('Dafont tag selector failed to find a .preview or .preview_l <div> on ' + url)
@@ -161,6 +170,8 @@ def dafont_download_img(url_match, config=PluginConfig()):
 def deviantart_download_img(url_match, config=PluginConfig()):
     url = url_match.string
     resp = http_get(url, config)
+    if not resp:
+        return None
     if b'>This content is intended for mature audiences<' in resp.content:
         LOGGER.warning('Mature Content detected on DeviantArt page %s', url)
         return None
@@ -174,7 +185,10 @@ def deviantart_download_img(url_match, config=PluginConfig()):
 
 def flickr_download_img(url_match, config=PluginConfig()):
     url = url_match.string
-    soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
+    resp = http_get(url, config)
+    if not resp:
+        return None
+    soup = BeautifulSoup(resp.content, config.html_parser)
     img = soup.select_one('img')
     if not img:
         raise RuntimeError('Flickr tag selector failed to find an <img> on ' + url)
@@ -187,7 +201,10 @@ def flickr_download_img(url_match, config=PluginConfig()):
 
 def opengameart_download_img(url_match, config=PluginConfig()):
     url = url_match.string
-    soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
+    resp = http_get(url, config)
+    if not resp:
+        return None
+    soup = BeautifulSoup(resp.content, config.html_parser)
     img = soup.select_one('.right-column img')
     if not img:
         raise RuntimeError('OpenGameArt tag selector failed to find an <img> on ' + url)
@@ -197,7 +214,10 @@ def opengameart_download_img(url_match, config=PluginConfig()):
 
 def wikipedia_download_img(url_match, config=PluginConfig()):
     url = url_match.string
-    soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
+    resp = http_get(url, config)
+    if not resp:
+        return None
+    soup = BeautifulSoup(resp.content, config.html_parser)
     anchor_tag = soup.select_one('a.internal')
     if not anchor_tag:
         raise RuntimeError('Wikipedia tag selector failed to find an .internal <a> on ' + url)
@@ -210,7 +230,10 @@ def wikipedia_download_img(url_match, config=PluginConfig()):
 
 def wikiart_download_img(url_match, config=PluginConfig()):
     url = url_match.string
-    soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
+    resp = http_get(url, config)
+    if not resp:
+        return None
+    soup = BeautifulSoup(resp.content, config.html_parser)
     img = soup.select_one('.wiki-layout-artist-image-wrapper img')
     if not img:
         raise RuntimeError('WikiArt tag selector failed to find <img> on' + url)
@@ -222,6 +245,8 @@ def download_img(url, config=PluginConfig()):
     if hasattr(url, 'string'):  # can initialy be either a string or a re.Match object
         url = url.string
     resp = http_get(url, config)
+    if not resp:
+        return None
     ext = EXT_PER_CONTENT_TYPE[resp.headers['Content-Type']]
     _, out_filepath = mkstemp(ext)
     with open(out_filepath, 'bw') as out_file:
@@ -231,6 +256,8 @@ def download_img(url, config=PluginConfig()):
 def http_get(url, config=PluginConfig()):
     with requests.get(url, timeout=config.timeout, verify=config.cert_verify,
                            headers={'User-Agent': config.user_agent}) as response:
+        if response.status_code == 404 and config.ignore_404:
+            return None
         if response.status_code != 200 and b'captcha' in response.content:
             LOGGER.warning('CAPTCHA is likely to be required by page %s', url)
         response.raise_for_status()

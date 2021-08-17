@@ -2,6 +2,7 @@ import logging, os, shutil
 
 import httpretty
 import pytest
+from requests.exceptions import HTTPError
 
 from image_preview_thumbnailer import process_all_links_in_html, PluginConfig, LOGGER
 
@@ -126,3 +127,13 @@ def test_bare_jpg():
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
     assert os.path.getsize("thumbnails/shaman-previz.jpg") > 0
     assert 'src="thumbnails/shaman-previz.jpg"' in out_html
+
+@pytest.mark.integration
+def test_404():
+    url = 'https://example.com/404.jpg'
+    with pytest.raises(HTTPError) as exc_info:
+        process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
+    assert exc_info.value.response.status_code == 404
+
+    config = PluginConfig(settings={'IMAGE_PREVIEW_THUMBNAILER_IGNORE_404': True})
+    process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url), config)

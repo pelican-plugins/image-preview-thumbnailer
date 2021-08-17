@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 * support for [OpenGameArt](https://opengameart.org) assets
 * support for GIF & SVG images hosted on Wikimedia
+* new `IMAGE_PREVIEW_THUMBNAILER_IGNORE_404` configuration option
 * extended range of supported Flickr URLs
 
 ## [1.0.2] - 2021-08-17

@@ -5,7 +5,7 @@
 
 [Pelican](https://getpelican.com) plugin that insert thumbnails along image links.
 
-## Démo page
+## Demo page
 <https://chezsoi.org/lucas/blog/pages/images-libres-de-droits.html#fonts>
 
 Source Markdown: [pages/images-libres-de-droits.md](https://github.com/Lucas-C/ludochaordic/blob/master/content/pages/images-libres-de-droits.md)
@@ -52,6 +52,17 @@ And insert those CSS rules:
 ```css
                      .preview-thumbnail { display: none; }
 .previewable:hover + .preview-thumbnail { display: block; }
+```
+
+### Usage with images lazyloading
+There are various Javascript libraries that can provide images lazyloading.
+If your Pelican template make use of one, you can customize `IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML` in order to benefit from it.
+
+For example, to do so using [lazysizes](https://github.com/aFarkas/lazysizes), defines the following in your `pelicanconf.py`:
+```python
+IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML = '''<a href="{link}" target="_blank">
+    <div class="lazyload" data-noscript=""><noscript><img src="{thumb}" alt=""></noscript></div>
+</a>'''
 ```
 
 ### Configuration

@@ -29,8 +29,12 @@ or just `body` to select the whole page.
 ### Supported link formats
 Currently this plugin support preview of the following links:
 * "raw" links to GIF/JPEG/PNG images
-* links to **ArtStation** artwork pages
-* links to **DeviantArt** artwork pages
+* links to [ArtStation](https://www.artstation.com) artwork pages
+* links to [Behance](https://www.behance.net) artwork pages
+* links to [Dafont](https://www.dafont.com) font pages
+* links to [DeviantArt](https://www.deviantart.com) artwork pages
+* links to [Flickr](https://www.flickr.com) photos
+* links to [WikiArt](https://www.wikiart.org) art pages
 * links to **Wikipedia/Wikimedia** images
 
 Feel free to submit PRs to add support for more image hosting websites.

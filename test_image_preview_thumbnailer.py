@@ -58,6 +58,20 @@ def test_artstation():
     assert 'src="thumbnails/OvE8y.jpg"' in out_html
 
 @pytest.mark.integration
+def test_behance():
+    url = 'https://www.behance.net/gallery/58149803/Character-design-vol-8'
+    out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
+    assert os.path.getsize("thumbnails/Character-design-vol-8.jpg") > 0
+    assert 'src="thumbnails/Character-design-vol-8.jpg"' in out_html
+
+@pytest.mark.integration
+def test_dafont():
+    url = 'https://www.dafont.com/mirage-gothic.font?l[]=10&l[]=1'
+    out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
+    assert os.path.getsize("thumbnails/mirage-gothic.font.png") > 0
+    assert 'src="thumbnails/mirage-gothic.font.png"' in out_html
+
+@pytest.mark.integration
 def test_deviantart():
     url = 'https://www.deviantart.com/deevad/art/Krita-texture-speedpainting-test-350472256'
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
@@ -70,6 +84,20 @@ def test_deviantart_mature_content():
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
     assert os.path.getsize("thumbnails/Angel-maybe-697980132.none") == 0
     assert '<img' not in out_html
+
+@pytest.mark.integration
+def test_flickr():
+    url = 'https://www.flickr.com/photos/84568447@N00/4860797836/in/photostream/'
+    out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
+    assert os.path.getsize("thumbnails/4860797836.jpg") > 0
+    assert 'src="thumbnails/4860797836.jpg"' in out_html
+
+@pytest.mark.integration
+def test_wikiart():
+    url = 'https://www.wikiart.org/en/john-bauer/d-och-d-tog-tomten-tag-i-tyglarna'
+    out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
+    assert os.path.getsize("thumbnails/d-och-d-tog-tomten-tag-i-tyglarna.jpg") > 0
+    assert 'src="thumbnails/d-och-d-tog-tomten-tag-i-tyglarna.jpg"' in out_html
 
 @pytest.mark.integration
 def test_wikimedia():

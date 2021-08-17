@@ -22,6 +22,7 @@ DEFAULT_USER_AGENT = 'pelican-plugin-image-preview-thumbnailer'
 EXT_PER_CONTENT_TYPE = {
     'image/gif': '.gif',
     'image/jpeg': '.jpg',
+    'image/jpg': '.jpg',
     'image/png': '.png',
 }
 
@@ -84,7 +85,11 @@ def process_all_links_in_html(html_file, config=PluginConfig()):
     return str(soup)
 
 def process_link(img_downloader, anchor_tag, match, config=PluginConfig()):
-    thumb_filename = anchor_tag['href'].rsplit('/', 1)[1]
+    url_frags = anchor_tag['href'].split('/')
+    thumb_filename = url_frags.pop()
+    while thumb_filename in ('in', 'photostream', ''):  # workaround for Flickr URL naming scheme
+        thumb_filename = url_frags.pop()
+    thumb_filename = thumb_filename.split('?', 1)[0]
     if any(thumb_filename.endswith(ext) for ext in EXT_PER_CONTENT_TYPE.values()):
         thumb_filename = os.path.splitext(thumb_filename)[0]
     matching_filepaths = glob(config.fs_thumbs_dir(thumb_filename + '.*'))
@@ -121,6 +126,29 @@ def artstation_download_img(match, config=PluginConfig()):
     LOGGER.debug("Image downloaded from: %s", img_url)
     return out_filepath
 
+def behance_download_img(match, config=PluginConfig()):
+    artwork_url = 'https://www.behance.net/v2/projects/{}?api_key=NdTKNWys9AdBhxMhXnKuxgfzmqvwkg55'.format(match.group(1))  # API key from https://github.com/djheru/js-behance-api
+    resp = http_get(artwork_url, config)
+    img_url = resp.json()['project']['covers']['404']
+    out_filepath = download_img(img_url, config)
+    LOGGER.debug("Image downloaded from: %s", img_url)
+    return out_filepath
+
+def dafont_download_img(match, config=PluginConfig()):
+    url = match.string
+    soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
+    preview_div = soup.select_one('.preview') or soup.select_one('.preview_l')
+    if not preview_div:
+        raise RuntimeError('Dafont tag selector failed to find a .preview or .preview_l <div> on ' + url)
+    img_url = preview_div['style'].replace('background-image:url(', '').replace(')', '')
+    if img_url.startswith('//'):
+        img_url = 'https:' + img_url
+    elif not img_url.startswith('http'):
+        img_url = 'https://www.dafont.com' + img_url
+    out_filepath = download_img(img_url, config)
+    LOGGER.debug("Image downloaded from: %s", img_url)
+    return out_filepath
+
 def deviantart_download_img(match, config=PluginConfig()):
     url = match.string
     resp = http_get(url, config)
@@ -130,9 +158,22 @@ def deviantart_download_img(match, config=PluginConfig()):
     soup = BeautifulSoup(resp.content, config.html_parser)
     img = soup.select_one('main div div div div div div div img')
     if not img:
-        LOGGER.error('DeviantArt tag selector failed to find an <img> on %s', url)
+        raise RuntimeError('DeviantArt tag selector failed to find an <img> on ' + url)
     out_filepath = download_img(img['src'], config)
     LOGGER.debug("Image downloaded from: %s", img['src'])
+    return out_filepath
+
+def flickr_download_img(match, config=PluginConfig()):
+    url = match.string
+    soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
+    img = soup.select_one('img')
+    if not img:
+        raise RuntimeError('Flickr tag selector failed to find an <img> on ' + url)
+    img_url = img['src']
+    if img_url.startswith('//'):
+        img_url = 'https:' + img_url
+    out_filepath = download_img(img_url, config)
+    LOGGER.debug("Image downloaded from: %s", img_url)
     return out_filepath
 
 def wikipedia_download_img(match, config=PluginConfig()):
@@ -140,12 +181,22 @@ def wikipedia_download_img(match, config=PluginConfig()):
     soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
     anchor_tag = soup.select_one('a.internal')
     if not anchor_tag:
-        LOGGER.error('Wikipedia tag selector failed to find a.internal on %s', url)
+        raise RuntimeError('Wikipedia tag selector failed to find an .internal <a> on ' + url)
     img_url = anchor_tag['href']
     if img_url.startswith('//'):
         img_url = 'https:' + img_url
     out_filepath = download_img(img_url, config)
     LOGGER.debug("Image downloaded from: %s", img_url)
+    return out_filepath
+
+def wikiart_download_img(match, config=PluginConfig()):
+    url = match.string
+    soup = BeautifulSoup(http_get(url, config).content, config.html_parser)
+    img = soup.select_one('.wiki-layout-artist-image-wrapper img')
+    if not img:
+        raise RuntimeError('WikiArt tag selector failed to find <img> on' + url)
+    out_filepath = download_img(img['src'], config)
+    LOGGER.debug("Image downloaded from: %s", img['src'])
     return out_filepath
 
 def download_img(url, config=PluginConfig()):
@@ -167,9 +218,13 @@ def http_get(url, config=PluginConfig()):
         return response
 
 DOWNLOADERS_PER_URL_REGEX = {
-    re.compile(r'https://www.artstation.com/artwork/(.+)'): artstation_download_img,
-    re.compile(r'https://www.deviantart.com/.+/art/.+'): deviantart_download_img,
-    re.compile(r'.+wiki(m|p)edia.org/wiki/.+(jpg|png)'): wikipedia_download_img,
+    re.compile(r'https://www\.artstation\.com/artwork/(.+)'): artstation_download_img,
+    re.compile(r'https://www\.behance\.net/gallery/(.+)/.+'): behance_download_img,
+    re.compile(r'https://www\.dafont\.com/.+\.font.*'): dafont_download_img,
+    re.compile(r'https://www\.deviantart\.com/.+/art/.+'): deviantart_download_img,
+    re.compile(r'https://www\.flickr\.com/photos/.+/in/photostream/'): flickr_download_img,
+    re.compile(r'.+wiki(m|p)edia\.org/wiki/.+(jpg|png)'): wikipedia_download_img,
+    re.compile(r'https://www\.wikiart\.org/../.+/.+'): wikiart_download_img,
     re.compile(r'.+\.(gif|jpe?g|png)'): download_img,
 }
 

@@ -127,7 +127,8 @@ def artstation_download_img(match, config=PluginConfig()):
     return out_filepath
 
 def behance_download_img(match, config=PluginConfig()):
-    artwork_url = 'https://www.behance.net/v2/projects/{}?api_key=NdTKNWys9AdBhxMhXnKuxgfzmqvwkg55'.format(match.group(1))  # API key from https://github.com/djheru/js-behance-api
+    # API key from https://github.com/djheru/js-behance-api
+    artwork_url = 'https://www.behance.net/v2/projects/{}?api_key=NdTKNWys9AdBhxMhXnKuxgfzmqvwkg55'.format(match.group(1))
     resp = http_get(artwork_url, config)
     img_url = resp.json()['project']['covers']['404']
     out_filepath = download_img(img_url, config)

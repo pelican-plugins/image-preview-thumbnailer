@@ -39,6 +39,21 @@ Currently this plugin support preview of the following links:
 
 Feel free to submit PRs to add support for more image hosting websites.
 
+### Only displaying thumbnails on hover
+The initial idea for this plugin was to just add `🖼️` icons after links to images,
+and then only display thumbnails when hovering on those icons.
+
+To configure this plugin to behave like this, defines the following in your `pelicanconf.py`:
+```python
+IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML = '<span class="previewable"> 🖼️</span><img src="{thumb}" class="preview-thumbnail">'
+```
+
+And insert those CSS rules:
+```css
+                     .preview-thumbnail { display: none; }
+.previewable:hover + .preview-thumbnail { display: block; }
+```
+
 ### Configuration
 Available options:
 
@@ -61,12 +76,6 @@ Available options:
 
 ### Release notes
 _cf._ [CHANGELOG.md](CHANGELOG.md)
-
-### Features that could be implemented
-* the initial idea for this plugin was to just add `🖼️` icons on links to images,
-  and then only display thumbnails when hovering on those links.
-  A more basic approach of just inserting `<img>` tags was in the end deemed sufficient,
-  but the original mechanism could still be implemented with a custom `DEFAULT_INSERTED_HTML` & adequate CSS styling.
 
 ## Contributing
 Contributions are welcome and much appreciated. Every little bit helps. You can contribute by improving the documentation,

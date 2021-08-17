@@ -6,7 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.0.3] - not released yet
 ### Added
-* support for [OpenGameArt](https://opengameart.org) assets
+* support for [OpenGameArt](https://opengameart.org) pages
+* support for pages with a `<meta property="og:image">` or `<meta property="twitter:image">` properties,
+  like [DeviantArt](https://www.deviantart.com) artworks, [Flickr](https://www.flickr.com) photos, [https://itch.io](itch.io) pages,
+  [OpenGameArt](https://opengameart.org) assets or [WikiArt](https://www.wikiart.org) pages
 * support for GIF & SVG images hosted on Wikimedia
 * new `IMAGE_PREVIEW_THUMBNAILER_IGNORE_404` configuration option
 * extended range of supported Flickr URLs

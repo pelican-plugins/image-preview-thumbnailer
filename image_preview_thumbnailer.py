@@ -79,11 +79,15 @@ def process_all_links_in_html(html_file, config=PluginConfig()):
     soup = BeautifulSoup(html_file, config.html_parser)
     for content in soup.select(config.selector):
         for anchor_tag in content.find_all("a"):
+            if not anchor_tag['href'].startswith('http'):
+                continue  # internal links are not supported for now
             for url_regex, img_downloader in DOWNLOADERS_PER_URL_REGEX.items():
                 url_match = url_regex.match(anchor_tag['href'])
                 if url_match:
                     process_link(img_downloader, anchor_tag, url_match, config)
                     break  # no need to test other image downloaders
+            else:
+                process_link(meta_img_downloader, anchor_tag, anchor_tag['href'], config)
     return str(soup)
 
 def process_link(img_downloader, anchor_tag, url_match, config=PluginConfig()):
@@ -168,48 +172,11 @@ def dafont_download_img(url_match, config=PluginConfig()):
     return out_filepath
 
 def deviantart_download_img(url_match, config=PluginConfig()):
-    url = url_match.string
-    resp = http_get(url, config)
-    if not resp:
+    img_url = _meta_img_url(url_match.string, config)
+    if not img_url or img_url.endswith('noentrythumb-200.png'):  # displayed e.g. for mature content
         return None
-    if b'>This content is intended for mature audiences<' in resp.content:
-        LOGGER.warning('Mature Content detected on DeviantArt page %s', url)
-        return None
-    soup = BeautifulSoup(resp.content, config.html_parser)
-    img = soup.select_one('main div div div div div div div img')
-    if not img:
-        raise RuntimeError('DeviantArt tag selector failed to find an <img> on ' + url)
-    out_filepath = download_img(img['src'], config)
-    LOGGER.debug("Image downloaded from: %s", img['src'])
-    return out_filepath
-
-def flickr_download_img(url_match, config=PluginConfig()):
-    url = url_match.string
-    resp = http_get(url, config)
-    if not resp:
-        return None
-    soup = BeautifulSoup(resp.content, config.html_parser)
-    img = soup.select_one('img')
-    if not img:
-        raise RuntimeError('Flickr tag selector failed to find an <img> on ' + url)
-    img_url = img['src']
-    if img_url.startswith('//'):
-        img_url = 'https:' + img_url
     out_filepath = download_img(img_url, config)
     LOGGER.debug("Image downloaded from: %s", img_url)
-    return out_filepath
-
-def opengameart_download_img(url_match, config=PluginConfig()):
-    url = url_match.string
-    resp = http_get(url, config)
-    if not resp:
-        return None
-    soup = BeautifulSoup(resp.content, config.html_parser)
-    img = soup.select_one('.right-column img')
-    if not img:
-        raise RuntimeError('OpenGameArt tag selector failed to find an <img> on ' + url)
-    out_filepath = download_img(img['src'], config)
-    LOGGER.debug("Image downloaded from: %s", img['src'])
     return out_filepath
 
 def wikipedia_download_img(url_match, config=PluginConfig()):
@@ -228,18 +195,21 @@ def wikipedia_download_img(url_match, config=PluginConfig()):
     LOGGER.debug("Image downloaded from: %s", img_url)
     return out_filepath
 
-def wikiart_download_img(url_match, config=PluginConfig()):
-    url = url_match.string
+def meta_img_downloader(url, config=PluginConfig()):
+    img_url = _meta_img_url(url, config)
+    if not img_url:
+        return None
+    out_filepath = download_img(img_url, config)
+    LOGGER.debug("Image downloaded from: %s", img_url)
+    return out_filepath
+
+def _meta_img_url(url, config):
     resp = http_get(url, config)
     if not resp:
         return None
     soup = BeautifulSoup(resp.content, config.html_parser)
-    img = soup.select_one('.wiki-layout-artist-image-wrapper img')
-    if not img:
-        raise RuntimeError('WikiArt tag selector failed to find <img> on' + url)
-    out_filepath = download_img(img['src'], config)
-    LOGGER.debug("Image downloaded from: %s", img['src'])
-    return out_filepath
+    meta = soup.select_one('meta[property="og:image"]') or soup.select_one('meta[property="twitter:image"]')
+    return meta and meta['content']
 
 def download_img(url, config=PluginConfig()):
     if hasattr(url, 'string'):  # can initialy be either a string or a re.Match object
@@ -268,10 +238,7 @@ DOWNLOADERS_PER_URL_REGEX = {
     re.compile(r'https://www\.behance\.net/gallery/(.+)/.+'): behance_download_img,
     re.compile(r'https://www\.dafont\.com/.+\.font.*'): dafont_download_img,
     re.compile(r'https://www\.deviantart\.com/.+/art/.+'): deviantart_download_img,
-    re.compile(r'https://www\.flickr\.com/photos/[^/]+/(?!album).+'): flickr_download_img,
     re.compile(r'.+wiki(m|p)edia\.org/wiki/.+(gif|jpg|png|svg)'): wikipedia_download_img,
-    re.compile(r'https://opengameart\.org/content/.+'): opengameart_download_img,
-    re.compile(r'https://www\.wikiart\.org/../.+/.+'): wikiart_download_img,
     re.compile(r'.+\.(gif|jpe?g|png)'): download_img,
 }
 

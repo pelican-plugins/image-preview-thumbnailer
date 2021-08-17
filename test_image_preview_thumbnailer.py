@@ -1,6 +1,5 @@
 import logging, os, shutil
 
-import httpretty
 import pytest
 from requests.exceptions import HTTPError
 
@@ -27,29 +26,6 @@ def setup():
     thumbs_dir = PluginConfig().fs_thumbs_dir()
     shutil.rmtree(thumbs_dir, ignore_errors=True)
     os.makedirs(thumbs_dir)
-
-def _setup_http_mocks(page_url, html_filepath, img_url):
-    with open(os.path.join(TEST_CONTENT_DIR, html_filepath)) as html_file:
-        httpretty.register_uri(httpretty.GET, page_url, body=html_file.read(),
-                               adding_headers ={'Content-Type': 'text/html'})
-    img_filename = img_url.rsplit('/', 1)[1]
-    img_ext = os.path.splitext(img_filename)[1]
-    content_type = {
-        '.gif': 'image/gif',
-        '.jpg': 'image/jpeg',
-        '.png': 'image/png',
-    }[img_ext]
-    with open(os.path.join(TEST_CONTENT_DIR, img_filename), 'rb') as img_file:
-        httpretty.register_uri(httpretty.GET, img_url, body=img_file.read(),
-                               adding_headers ={'Content-Type': content_type})
-
-@httpretty.activate
-def test_deviantart_mocked():
-    url = 'https://www.deviantart.com/deevad/art/Krita-texture-speedpainting-test-350472256'
-    _setup_http_mocks(url, "deviantart.html", "https://images-wixmp-abcdef.wixmp.com/f/LadyofHats_DnD_Unicorn.jpg")
-    out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
-    assert os.path.getsize("thumbnails/Krita-texture-speedpainting-test-350472256.jpg") > 0
-    assert 'src="thumbnails/Krita-texture-speedpainting-test-350472256.jpg"' in out_html
 
 @pytest.mark.integration
 def test_artstation():
@@ -99,6 +75,13 @@ def test_flickr_photostream():
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
     assert os.path.getsize("thumbnails/4860797836.jpg") > 0
     assert 'src="thumbnails/4860797836.jpg"' in out_html
+
+@pytest.mark.integration
+def test_itchio():
+    url = 'https://lucas-c.itch.io/undying-dusk'
+    out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
+    assert os.path.getsize("thumbnails/undying-dusk.png") > 0
+    assert 'src="thumbnails/undying-dusk.png"' in out_html
 
 @pytest.mark.integration
 def test_opengameart():

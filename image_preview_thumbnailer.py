@@ -1,6 +1,9 @@
 import logging, os, re, warnings
 from glob import glob
-from contextlib import nullcontext
+try:
+    from contextlib import nullcontext
+except ImportError:  # => Python 3.6
+    from contextlib import suppress as nullcontext
 from tempfile import mkstemp
 
 from bs4 import BeautifulSoup

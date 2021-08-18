@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.4] - 2021-08-18
+### Fixed
+* `ImportError` with Python 3.6 due to `contextlib.nullcontext` not existing yet
+
 ## [1.0.3] - 2021-08-18
 ### Changed
 * several comma-separated values can now be provided as CSS selectors to `Image-preview-thumbnailer`

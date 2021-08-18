@@ -63,6 +63,7 @@ class PluginConfig(dict):
         self.setdefault('output_path', '')
         self.setdefault('cert_verify', DEFAULT_CERT_VERIFY)
         self.setdefault('encoding', DEFAULT_ENCODING)
+        self.setdefault('except_urls', '')
         self.setdefault('html_parser', DEFAULT_HTML_PARSER)
         self.setdefault('ignore_404', DEFAULT_IGNORE_404)
         self.setdefault('inserted_html', DEFAULT_INSERTED_HTML)
@@ -71,8 +72,11 @@ class PluginConfig(dict):
         self.setdefault('thumb_size', DEFAULT_THUMB_SIZE)
         self.setdefault('timeout', DEFAULT_TIMEOUT)
         self.setdefault('user_agent', DEFAULT_USER_AGENT)
-        self.except_urls = [re.compile(regex) for regex in self.get('except_urls', '').split(',')]
-        self.selector = self.selector.split(',')
+        # pylint: disable=access-member-before-definition
+        if self.except_urls and isinstance(self.except_urls, str):
+            self.except_urls = [re.compile(regex) for regex in self.except_urls.split(',')]
+        if isinstance(self.selector, str):
+            self.selector = self.selector.split(',')
     @classmethod
     def from_metadata(cls, metadata, settings):
         enabled = metadata.get('image-preview-thumbnailer') or settings.get('IMAGE_PREVIEW_THUMBNAILER')
@@ -236,6 +240,7 @@ def meta_img_downloader(url, config=PluginConfig()):
     if not img_url:
         return None
     safe_config = PluginConfig(config)  # copy
+    # pylint: disable=attribute-defined-outside-init
     safe_config.ignore_404 = True
     try:
         out_filepath = download_img(img_url, safe_config)

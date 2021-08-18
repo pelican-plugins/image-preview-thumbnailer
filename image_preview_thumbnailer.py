@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from pelican import signals
 from PIL import Image
 import requests
+from requests.exceptions import ConnectTimeout
 from urllib3.exceptions import InsecureRequestWarning
 
 
@@ -15,6 +16,7 @@ DEFAULT_ENCODING = 'utf-8'
 DEFAULT_HTML_PARSER = 'html.parser'  # Alt: 'html5lib', 'lxml', 'lxml-xml'
 DEFAULT_IGNORE_404 = False
 DEFAULT_INSERTED_HTML = '<a href="{link}" target="_blank" class="preview-thumbnail"><img src="{thumb}" class="preview-thumbnail"></a>'
+DEFAULT_SELECTOR = 'body'
 DEFAULT_THUMBS_DIR = 'thumbnails'
 DEFAULT_THUMB_SIZE = 300
 DEFAULT_TIMEOUT = 3
@@ -39,10 +41,9 @@ def process_all_links(path, context):
         # This plugin currently does not handle static page, like the index
         # Adding support for them should be trivial though
         return
-    selector = content.metadata.get('image-preview-thumbnailer')
-    if not selector:  # => this plugin has not been enabled on this page
+    config = PluginConfig.from_metadata(content.metadata, context)
+    if not config:  # => this plugin has not been enabled on this page
         return
-    config = PluginConfig(selector, context)
     if not os.path.exists(config.fs_thumbs_dir()):
         os.makedirs(config.fs_thumbs_dir(), exist_ok=True)
     with nullcontext() if config.cert_verify else warnings.catch_warnings():
@@ -54,21 +55,50 @@ def process_all_links(path, context):
             html_file.truncate()
             html_file.write(edited_html)
 
-class PluginConfig:
-    def __init__(self, selector='body', settings=None):
-        self.selector = selector
+class PluginConfig(dict):
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__
+    def __init__(self, odict=None):
+        super().__init__(odict or {})
+        self.setdefault('output_path', '')
+        self.setdefault('cert_verify', DEFAULT_CERT_VERIFY)
+        self.setdefault('encoding', DEFAULT_ENCODING)
+        self.setdefault('html_parser', DEFAULT_HTML_PARSER)
+        self.setdefault('ignore_404', DEFAULT_IGNORE_404)
+        self.setdefault('inserted_html', DEFAULT_INSERTED_HTML)
+        self.setdefault('rel_thumbs_dir', DEFAULT_THUMBS_DIR)
+        self.setdefault('selector', DEFAULT_SELECTOR)
+        self.setdefault('thumb_size', DEFAULT_THUMB_SIZE)
+        self.setdefault('timeout', DEFAULT_TIMEOUT)
+        self.setdefault('user_agent', DEFAULT_USER_AGENT)
+        self.except_urls = [re.compile(regex) for regex in self.get('except_urls', '').split(',')]
+        self.selector = self.selector.split(',')
+    @classmethod
+    def from_metadata(cls, metadata, settings):
+        enabled = metadata.get('image-preview-thumbnailer') or settings.get('IMAGE_PREVIEW_THUMBNAILER')
+        if not enabled:
+            return None
         if settings is None:
             settings = {}
-        self.output_path = settings.get('OUTPUT_PATH', '')
-        self.cert_verify = settings.get('IMAGE_PREVIEW_THUMBNAILER_CERT_VERIFY', DEFAULT_CERT_VERIFY)
-        self.encoding = settings.get('IMAGE_PREVIEW_THUMBNAILER_ENCODING', DEFAULT_ENCODING)
-        self.html_parser = settings.get('IMAGE_PREVIEW_THUMBNAILER_HTML_PARSER', DEFAULT_HTML_PARSER)
-        self.ignore_404 = settings.get('IMAGE_PREVIEW_THUMBNAILER_IGNORE_404', DEFAULT_IGNORE_404)
-        self.inserted_html = settings.get('IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML', DEFAULT_INSERTED_HTML)
-        self.rel_thumbs_dir = settings.get('IMAGE_PREVIEW_THUMBNAILER_DIR', DEFAULT_THUMBS_DIR)
-        self.thumb_size = settings.get('IMAGE_PREVIEW_THUMBNAILER_THUMB_SIZE', DEFAULT_THUMB_SIZE)
-        self.timeout = settings.get('IMAGE_PREVIEW_THUMBNAILER_REQUEST_TIMEOUT', DEFAULT_TIMEOUT)
-        self.user_agent = settings.get('IMAGE_PREVIEW_THUMBNAILER_USERAGENT', DEFAULT_USER_AGENT)
+        attrs = {}
+        def set_attr(key, value):
+            if value is not None:
+                attrs[key] = value
+        set_attr('output_path', settings.get('OUTPUT_PATH'))
+        # Global configuration entries:
+        set_attr('cert_verify', settings.get('IMAGE_PREVIEW_THUMBNAILER_CERT_VERIFY'))
+        set_attr('encoding', settings.get('IMAGE_PREVIEW_THUMBNAILER_ENCODING'))
+        set_attr('html_parser', settings.get('IMAGE_PREVIEW_THUMBNAILER_HTML_PARSER'))
+        set_attr('rel_thumbs_dir', settings.get('IMAGE_PREVIEW_THUMBNAILER_DIR'))
+        set_attr('timeout', settings.get('IMAGE_PREVIEW_THUMBNAILER_REQUEST_TIMEOUT'))
+        set_attr('user_agent', settings.get('IMAGE_PREVIEW_THUMBNAILER_USERAGENT'))
+        # Configuration entries that can be configured either globally or per article/page:
+        set_attr('selector', (enabled if enabled is not True else None) or settings.get('IMAGE_PREVIEW_THUMBNAILER_SELECTOR'))
+        set_attr('except_urls', metadata.get('image-preview-thumbnailer-except-urls') or settings.get('IMAGE_PREVIEW_THUMBNAILER_EXCEPT_URLS'))
+        set_attr('ignore_404', metadata.get('image-preview-thumbnailer-ignore-404') or settings.get('IMAGE_PREVIEW_THUMBNAILER_IGNORE_404'))
+        set_attr('inserted_html', metadata.get('image-preview-thumbnailer-inserted-html') or settings.get('IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML'))
+        set_attr('thumb_size', metadata.get('image-preview-thumbnailer-thumb-size') or settings.get('IMAGE_PREVIEW_THUMBNAILER_THUMB_SIZE'))
+        return cls(attrs)
     def fs_thumbs_dir(self, path=''):
         fs_dir = os.path.join(self.output_path, self.rel_thumbs_dir)
         if path:
@@ -77,17 +107,23 @@ class PluginConfig:
 
 def process_all_links_in_html(html_file, config=PluginConfig()):
     soup = BeautifulSoup(html_file, config.html_parser)
-    for content in soup.select(config.selector):
-        for anchor_tag in content.find_all("a"):
-            if not anchor_tag['href'].startswith('http'):
-                continue  # internal links are not supported for now
-            for url_regex, img_downloader in DOWNLOADERS_PER_URL_REGEX.items():
-                url_match = url_regex.match(anchor_tag['href'])
-                if url_match:
-                    process_link(img_downloader, anchor_tag, url_match, config)
-                    break  # no need to test other image downloaders
-            else:
-                process_link(meta_img_downloader, anchor_tag, anchor_tag['href'], config)
+    anchor_tags = set()
+    for css_selector in config.selector:
+        for content in soup.select(css_selector):
+            for anchor_tag in content.find_all("a"):
+                if not anchor_tag['href'].startswith('http'):
+                    continue  # internal links are not supported for now
+                if any(regex.search(anchor_tag['href']) for regex in config.except_urls):
+                    continue
+                anchor_tags.add(anchor_tag)
+    for anchor_tag in anchor_tags:
+        for url_regex, img_downloader in DOWNLOADERS_PER_URL_REGEX.items():
+            url_match = url_regex.match(anchor_tag['href'])
+            if url_match:
+                process_link(img_downloader, anchor_tag, url_match, config)
+                break  # no need to test other image downloaders
+        else:
+            process_link(meta_img_downloader, anchor_tag, anchor_tag['href'], config)
     return str(soup)
 
 def process_link(img_downloader, anchor_tag, url_match, config=PluginConfig()):
@@ -117,12 +153,12 @@ def process_link(img_downloader, anchor_tag, url_match, config=PluginConfig()):
 def extract_thumb_filename(page_url):
     url_frags = page_url.split('/')
     thumb_filename = url_frags.pop()
-    # Workarounds for Flickr URL naming scheme:
-    while thumb_filename in ('in', 'photostream', ''):
+    # Workarounds for DeviantArt & Flickr URL naming scheme:
+    while thumb_filename in ('', 'gallery', 'in', 'photostream'):
         thumb_filename = url_frags.pop()
-        if thumb_filename.startswith('album-'):
+        if thumb_filename.startswith('album-'):  # Workaround for Flickr photostream URLs
             thumb_filename = url_frags.pop()
-    thumb_filename = thumb_filename.split('?', 1)[0]
+    thumb_filename = thumb_filename.split('#', 1)[0].split('?', 1)[0]
     if any(thumb_filename.endswith(ext) for ext in EXT_PER_CONTENT_TYPE.values()):
         thumb_filename = os.path.splitext(thumb_filename)[0]
     return thumb_filename
@@ -199,9 +235,14 @@ def meta_img_downloader(url, config=PluginConfig()):
     img_url = _meta_img_url(url, config)
     if not img_url:
         return None
-    out_filepath = download_img(img_url, config)
-    LOGGER.debug("Image downloaded from: %s", img_url)
-    return out_filepath
+    safe_config = PluginConfig(config)  # copy
+    safe_config.ignore_404 = True
+    try:
+        out_filepath = download_img(img_url, safe_config)
+        LOGGER.debug("Image downloaded from: %s", img_url)
+        return out_filepath
+    except ConnectTimeout:
+        return None
 
 def _meta_img_url(url, config):
     resp = http_get(url, config)
@@ -238,8 +279,8 @@ DOWNLOADERS_PER_URL_REGEX = {
     re.compile(r'https://www\.behance\.net/gallery/(.+)/.+'): behance_download_img,
     re.compile(r'https://www\.dafont\.com/.+\.font.*'): dafont_download_img,
     re.compile(r'https://www\.deviantart\.com/.+/art/.+'): deviantart_download_img,
-    re.compile(r'.+wiki(m|p)edia\.org/wiki/.+(gif|jpg|png|svg)'): wikipedia_download_img,
-    re.compile(r'.+\.(gif|jpe?g|png)'): download_img,
+    re.compile(r'.+wiki(m|p)edia\.org/wiki/.+(gif|jpg|png|svg)$'): wikipedia_download_img,
+    re.compile(r'.+\.(gif|jpe?g|png|svg)$'): download_img,
 }
 
 def register():

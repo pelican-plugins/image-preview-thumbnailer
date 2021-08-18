@@ -118,5 +118,5 @@ def test_404():
         process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
     assert exc_info.value.response.status_code == 404
 
-    config = PluginConfig(settings={'IMAGE_PREVIEW_THUMBNAILER_IGNORE_404': True})
+    config = PluginConfig({'ignore_404': True})
     process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url), config)

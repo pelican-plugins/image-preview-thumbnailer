@@ -4,15 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.0.3] - 2021-08-17
+## [1.0.3] - 2021-08-18
+### Changed
+* several comma-separated values can now be provided as CSS selectors to `Image-preview-thumbnailer`
 ### Added
-* support for [OpenGameArt](https://opengameart.org) pages
 * support for pages with a `<meta property="og:image">` or `<meta property="twitter:image">` properties,
   like [DeviantArt](https://www.deviantart.com) artworks, [Flickr](https://www.flickr.com) photos, [https://itch.io](itch.io) pages,
   [OpenGameArt](https://opengameart.org) assets or [WikiArt](https://www.wikiart.org) pages
-* support for GIF & SVG images hosted on Wikimedia
-* new `IMAGE_PREVIEW_THUMBNAILER_IGNORE_404` configuration option
-* extended range of supported Flickr URLs
+* support for GIF & SVG images, "bare" or hosted on Wikimedia
+* new global `pelicanconf.py` configuration entries:
+    + `IMAGE_PREVIEW_THUMBNAILER`
+    + `IMAGE_PREVIEW_THUMBNAILER_EXCEPT_URLS`
+    + `IMAGE_PREVIEW_THUMBNAILER_IGNORE_404`
+    + `IMAGE_PREVIEW_THUMBNAILER_SELECTOR`
+* some configuration entries can bow be overriden per article/page:
+```yaml
+image-preview-thumbnailer-except-urls: ...
+image-preview-thumbnailer-ignore-404: ...
+image-preview-thumbnailer-inserted-html: ...
+image-preview-thumbnailer-thumb-size: ...
+```
 
 ## [1.0.2] - 2021-08-17
 ### Added

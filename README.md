@@ -25,6 +25,7 @@ Image-preview-thumbnailer: $selector
 `$selector` is a CSS selector to target HTML elements this plugin will parse and look for `<a>` hyperlinks.
 It can be for example `article` if your Pelican template place your pages content in `<article>` tags,
 or just `body` to select the whole page.
+Several comma-separated values can be provided as CSS selectors to `Image-preview-thumbnailer`.
 
 ### Supported link formats
 Currently this plugin support preview of the following links:
@@ -66,7 +67,7 @@ IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML = '''<a href="{link}" target="_blank">
 ```
 
 ### Configuration
-Available options:
+Available `pelicanconf.py` options:
 
 - `IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML` (optional, default: `<a href="{link}" target="_blank" class="preview-thumbnail"><img src="{thumb}" class="preview-thumbnail"></a>`) :
   the HTML code to be inserted after every link (`<a>`) to an image, in order to preview it
@@ -74,6 +75,8 @@ Available options:
   avoid raising exceptions when links are found pointing to images but they end up in HTTP 404 errors
 - `IMAGE_PREVIEW_THUMBNAILER_DIR` (optional, default: `thumbnails`) :
   directory where thumbnail images are stored
+- `IMAGE_PREVIEW_THUMBNAILER_EXCEPT_URLS` (optional) :
+  comma-separated list of regex patterns of URLs to ignore
 - `IMAGE_PREVIEW_THUMBNAILER_THUMB_SIZE` (optional, default: `300`) :
   size in pixel of the generated thumbnails.
 - `IMAGE_PREVIEW_THUMBNAILER_ENCODING` (optional, default: `utf-8`) :
@@ -84,8 +87,21 @@ Available options:
   enforce HTTPS certificates verification when sending linkbacks
 - `IMAGE_PREVIEW_THUMBNAILER_REQUEST_TIMEOUT` (optional, in seconds, default: `3`) :
   time in seconds allowed for each HTTP linkback request before abandon
+- `IMAGE_PREVIEW_THUMBNAILER_SELECTOR` (optional, default: `body`) :
+  CSS selector to target HTML elements this plugin will parse and look for `<a>` hyperlinks.
 - `IMAGE_PREVIEW_THUMBNAILER_USERAGENT` (optional, default: `pelican-plugin-image-preview-thumbnailer`) :
   the `User-Agent` HTTP header to use while sending notifications.
+- `IMAGE_PREVIEW_THUMBNAILER` (optional, default: `False`) :
+  enable the plugin on all your pages
+
+Available metadata entries:
+```yaml
+image-preview-thumbnailer: $selector or just true
+image-preview-thumbnailer-except-urls: same as IMAGE_PREVIEW_THUMBNAILER_EXCEPT_URLS
+image-preview-thumbnailer-ignore-404: same as IMAGE_PREVIEW_THUMBNAILER_IGNORE_404
+image-preview-thumbnailer-inserted-html: same as IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML
+image-preview-thumbnailer-thumb-size: same as IMAGE_PREVIEW_THUMBNAILER_THUMB_SIZE
+```
 
 ### Release notes
 _cf._ [CHANGELOG.md](CHANGELOG.md)

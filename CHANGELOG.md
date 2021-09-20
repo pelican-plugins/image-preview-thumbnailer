@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.5] - 2021-09-20
+### Added
+* support for links to [FreeSVG.org](https://freesvg.org) vector images
+
 ## [1.0.4] - 2021-08-18
 ### Fixed
 * `ImportError` with Python 3.6 due to `contextlib.nullcontext` not existing yet

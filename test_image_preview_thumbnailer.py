@@ -6,8 +6,6 @@ from requests.exceptions import HTTPError
 from image_preview_thumbnailer import process_all_links_in_html, PluginConfig, LOGGER
 
 
-CUR_DIR = os.path.dirname(__file__)
-TEST_CONTENT_DIR = os.path.join(CUR_DIR, 'test_content')
 BLOG_PAGE_TEMPLATE = """<html lang="en-US">
 <head>
   <meta charset="UTF-8">

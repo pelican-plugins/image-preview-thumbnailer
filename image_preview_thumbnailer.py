@@ -13,7 +13,6 @@ import requests
 from requests.exceptions import ConnectTimeout
 from urllib3.exceptions import InsecureRequestWarning
 
-
 DEFAULT_CERT_VERIFY = True
 DEFAULT_ENCODING = 'utf-8'
 DEFAULT_HTML_PARSER = 'html.parser'  # Alt: 'html5lib', 'lxml', 'lxml-xml'
@@ -22,7 +21,7 @@ DEFAULT_INSERTED_HTML = '<a href="{link}" target="_blank" class="preview-thumbna
 DEFAULT_SELECTOR = 'body'
 DEFAULT_THUMBS_DIR = 'thumbnails'
 DEFAULT_THUMB_SIZE = 300
-DEFAULT_TIMEOUT = 3
+DEFAULT_TIMEOUT = 5
 DEFAULT_USER_AGENT = 'pelican-plugin-image-preview-thumbnailer'
 
 EXT_PER_CONTENT_TYPE = {
@@ -142,7 +141,7 @@ def process_link(img_downloader, anchor_tag, url_match, config=PluginConfig()):
         LOGGER.info("Thumbnail does not exist => downloading image from %s", anchor_tag['href'])
         tmp_thumb_filepath = img_downloader(url_match, config)
         if not tmp_thumb_filepath:  # => means the downloader failed to retrieve the image in a "supported" case
-            with open(config.fs_thumbs_dir(thumb_filename + '.none'), 'w'):
+            with open(config.fs_thumbs_dir(thumb_filename + '.none', encoding='utf8'), 'w'):
                 pass
             return
         img_ext = os.path.splitext(tmp_thumb_filepath)[1]
@@ -238,9 +237,22 @@ def wikipedia_download_img(url_match, config=PluginConfig()):
     LOGGER.debug("Image downloaded from: %s", img_url)
     return out_filepath
 
+def freesvg_download_img(url_match, config=PluginConfig()):
+    url = url_match.string
+    resp = http_get(url, config)
+    if not resp:
+        return None
+    soup = BeautifulSoup(resp.content, config.html_parser)
+    img = soup.select_one('.vec_veliki')
+    if not img:
+        raise RuntimeError('FreeSVG tag selector failed to find a .vec_veliki <img> on ' + url)
+    out_filepath = download_img('https://freesvg.org' + img['src'], config)
+    LOGGER.debug("Image downloaded from: %s", img['src'])
+    return out_filepath
+
 def meta_img_downloader(url, config=PluginConfig()):
     img_url = _meta_img_url(url, config)
-    if not img_url:
+    if not img_url or not img_url.startswith('http'):
         return None
     safe_config = PluginConfig(config)  # copy
     # pylint: disable=attribute-defined-outside-init
@@ -287,6 +299,7 @@ DOWNLOADERS_PER_URL_REGEX = {
     re.compile(r'https://www\.behance\.net/gallery/(.+)/.+'): behance_download_img,
     re.compile(r'https://www\.dafont\.com/.+\.font.*'): dafont_download_img,
     re.compile(r'https://www\.deviantart\.com/.+/art/.+'): deviantart_download_img,
+    re.compile(r'https://freesvg.org/[^/]+'): freesvg_download_img,
     re.compile(r'.+wiki(m|p)edia\.org/wiki/.+(gif|jpg|png|svg)$'): wikipedia_download_img,
     re.compile(r'.+\.(gif|jpe?g|png|svg)$'): download_img,
 }

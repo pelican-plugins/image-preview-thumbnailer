@@ -1,5 +1,5 @@
 [MESSAGES CONTROL]
-disable = missing-docstring, multiple-imports, too-few-public-methods, too-many-instance-attributes
+disable = consider-using-f-string, missing-docstring, multiple-imports, too-few-public-methods, too-many-instance-attributes
 
 [FORMAT]
 max-line-length = 150

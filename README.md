@@ -35,6 +35,7 @@ Currently this plugin support preview of the following links:
 * links to [Behance](https://www.behance.net) artwork pages
 * links to [Dafont](https://www.dafont.com) font pages
 * links to [FreeSVG.org](https://freesvg.org) vector images
+* links to [Pixabay](https://pixabay.com) images
 * links to pages with a `<meta property="og:image">` or `<meta property="twitter:image">` properties,
   like [DeviantArt](https://www.deviantart.com) artworks, [Flickr](https://www.flickr.com) photos, [https://itch.io](itch.io) pages,
   [OpenGameArt](https://opengameart.org) assets or [WikiArt](https://www.wikiart.org) pages

@@ -238,12 +238,12 @@ def wikipedia_download_img(url_match, config=PluginConfig()):
     return out_filepath
 
 def pixabay_download_img(url_match, config=PluginConfig()):
-    API_KEY = os.environ.get('PIXABAY_API_KEY')
-    if not API_KEY:
+    api_key = os.environ.get('PIXABAY_API_KEY')
+    if not api_key:
         LOGGER.warning("$PIXABAY_API_KEY not set, cannot download image from page: %s", url_match.string)
         return None
     resp = requests.get('https://pixabay.com/api/',
-                        params={"key": API_KEY, "id": url_match.group(1)},
+                        params={"key": api_key, "id": url_match.group(1)},
                         timeout=config.timeout, verify=config.cert_verify,
                         headers={'User-Agent': config.user_agent})
     if resp.status_code != 200:

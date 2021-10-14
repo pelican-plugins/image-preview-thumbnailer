@@ -5,6 +5,7 @@ try:
 except ImportError:  # => Python 3.6
     from contextlib import suppress as nullcontext
 from tempfile import mkstemp
+from urllib.parse import unquote
 
 from bs4 import BeautifulSoup
 from pelican import signals
@@ -165,6 +166,7 @@ def extract_thumb_filename(page_url):
         if thumb_filename.startswith('album-'):  # Workaround for Flickr photostream URLs
             thumb_filename = url_frags.pop()
     thumb_filename = thumb_filename.split('#', 1)[0].split('?', 1)[0]
+    thumb_filename = unquote(thumb_filename)
     if any(thumb_filename.endswith(ext) for ext in EXT_PER_CONTENT_TYPE.values()):
         thumb_filename = os.path.splitext(thumb_filename)[0]
     return thumb_filename
@@ -324,3 +326,11 @@ DOWNLOADERS_PER_URL_REGEX = {
 
 def register():
     signals.content_written.connect(process_all_links)
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+    # URL = ...
+    # URL_MATCH = re.compile(...).match(URL)
+    # print(pixabay_download_img(URL_MATCH))
+    # process_link(pixabay_download_img, {'href': URL}, URL_MATCH)

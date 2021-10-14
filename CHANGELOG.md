@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.8] - not released yet
+### Changed
+* now URL-decoding thumbnail filenames
+
 ## [1.0.7] - 2021-10-14
 ### Added
 * support for links to [Pixabay](https://pixabay.com) images

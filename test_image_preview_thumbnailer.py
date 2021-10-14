@@ -3,7 +3,7 @@ import logging, os, shutil
 import pytest
 from requests.exceptions import HTTPError
 
-from image_preview_thumbnailer import process_all_links_in_html, PluginConfig, LOGGER
+from image_preview_thumbnailer import process_all_links_in_html, extract_thumb_filename, PluginConfig, LOGGER
 
 
 BLOG_PAGE_TEMPLATE = """<html lang="en-US">
@@ -24,6 +24,9 @@ def setup():
     thumbs_dir = PluginConfig().fs_thumbs_dir()
     shutil.rmtree(thumbs_dir, ignore_errors=True)
     os.makedirs(thumbs_dir)
+
+def test_extract_thumb_filename():
+    assert extract_thumb_filename('https://pixabay.com/fr/vectors/femme-t%C3%A9l%C3%A9phone-portable-5716875/') == 'femme-téléphone-portable-5716875'
 
 @pytest.mark.integration
 def test_artstation():

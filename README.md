@@ -104,6 +104,10 @@ image-preview-thumbnailer-inserted-html: same as IMAGE_PREVIEW_THUMBNAILER_INSER
 image-preview-thumbnailer-thumb-size: same as IMAGE_PREVIEW_THUMBNAILER_THUMB_SIZE
 ```
 
+You will also have to define a `$PIXABAY_API_KEY` environment variable
+to download images from [Pixabay](https://pixabay.com).
+
+
 ### Release notes
 _cf._ [CHANGELOG.md](CHANGELOG.md)
 

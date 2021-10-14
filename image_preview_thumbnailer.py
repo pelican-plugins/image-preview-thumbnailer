@@ -237,6 +237,23 @@ def wikipedia_download_img(url_match, config=PluginConfig()):
     LOGGER.debug("Image downloaded from: %s", img_url)
     return out_filepath
 
+def pixabay_download_img(url_match, config=PluginConfig()):
+    API_KEY = os.environ.get('PIXABAY_API_KEY')
+    if not API_KEY:
+        LOGGER.warning("$PIXABAY_API_KEY not set, cannot download image from page: %s", url_match.string)
+        return None
+    resp = requests.get('https://pixabay.com/api/',
+                        params={"key": API_KEY, "id": url_match.group(1)},
+                        timeout=config.timeout, verify=config.cert_verify,
+                        headers={'User-Agent': config.user_agent})
+    if resp.status_code != 200:
+        LOGGER.warning("pixabay.com/api response error - HTTP code: %s", resp.status_code)
+        return None
+    img_url = resp.json()['hits'][0]['previewURL']
+    out_filepath = download_img(img_url, config)
+    LOGGER.debug("Image downloaded from: %s", img_url)
+    return out_filepath
+
 def freesvg_download_img(url_match, config=PluginConfig()):
     url = url_match.string
     resp = http_get(url, config)
@@ -299,6 +316,7 @@ DOWNLOADERS_PER_URL_REGEX = {
     re.compile(r'https://www\.behance\.net/gallery/(.+)/.+'): behance_download_img,
     re.compile(r'https://www\.dafont\.com/.+\.font.*'): dafont_download_img,
     re.compile(r'https://www\.deviantart\.com/.+/art/.+'): deviantart_download_img,
+    re.compile(r'https://pixabay\.com/.+-(\d+)/'): pixabay_download_img,
     re.compile(r'https://freesvg.org/[^/]+$'): freesvg_download_img,
     re.compile(r'.+wiki(m|p)edia\.org/wiki/.+(gif|jpg|png|svg)$'): wikipedia_download_img,
     re.compile(r'.+\.(gif|jpe?g|png|svg)$'): download_img,

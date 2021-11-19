@@ -74,7 +74,9 @@ Available `pelicanconf.py` options:
 - `IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML` (optional, default: `<a href="{link}" target="_blank" class="preview-thumbnail"><img src="{thumb}" class="preview-thumbnail"></a>`) :
   the HTML code to be inserted after every link (`<a>`) to an image, in order to preview it
 - `IMAGE_PREVIEW_THUMBNAILER_IGNORE_404` (optional, default: `False`) :
-  avoid raising exceptions when links are found pointing to images but they end up in HTTP 404 errors
+  avoid raising exceptions that abort Pelican when links are found, pointing to images, but they end up in HTTP 404 errors
+- `SILENT_HTTP_ERRORS` (optional, default: `True`) :
+  avoid raising exceptions that abort Pelican when links are found, pointing to images, but they end up with an HTTP error, of any kind. An error log message is still produced.
 - `IMAGE_PREVIEW_THUMBNAILER_DIR` (optional, default: `thumbnails`) :
   directory where thumbnail images are stored
 - `IMAGE_PREVIEW_THUMBNAILER_EXCEPT_URLS` (optional) :

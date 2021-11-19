@@ -17,6 +17,7 @@ from urllib3.exceptions import InsecureRequestWarning
 DEFAULT_CERT_VERIFY = True
 DEFAULT_ENCODING = 'utf-8'
 DEFAULT_HTML_PARSER = 'html.parser'  # Alt: 'html5lib', 'lxml', 'lxml-xml'
+DEFAULT_SILENT_HTTP_ERRORS = True
 DEFAULT_IGNORE_404 = False
 DEFAULT_INSERTED_HTML = '<a href="{link}" target="_blank" class="preview-thumbnail"><img src="{thumb}" class="preview-thumbnail"></a>'
 DEFAULT_SELECTOR = 'body'
@@ -68,6 +69,7 @@ class PluginConfig(dict):
         self.setdefault('encoding', DEFAULT_ENCODING)
         self.setdefault('except_urls', '')
         self.setdefault('html_parser', DEFAULT_HTML_PARSER)
+        self.setdefault('silent_http_errors', DEFAULT_SILENT_HTTP_ERRORS)
         self.setdefault('ignore_404', DEFAULT_IGNORE_404)
         self.setdefault('inserted_html', DEFAULT_INSERTED_HTML)
         self.setdefault('rel_thumbs_dir', DEFAULT_THUMBS_DIR)
@@ -102,6 +104,7 @@ class PluginConfig(dict):
         # Configuration entries that can be configured either globally or per article/page:
         set_attr('selector', (enabled if enabled is not True else None) or settings.get('IMAGE_PREVIEW_THUMBNAILER_SELECTOR'))
         set_attr('except_urls', metadata.get('image-preview-thumbnailer-except-urls') or settings.get('IMAGE_PREVIEW_THUMBNAILER_EXCEPT_URLS'))
+        set_attr('silent_http_errors', metadata.get('image-preview-thumbnailer-silent-http-errors') or settings.get('IMAGE_PREVIEW_THUMBNAILER_SILENT_HTTP_ERRORS'))
         set_attr('ignore_404', metadata.get('image-preview-thumbnailer-ignore-404') or settings.get('IMAGE_PREVIEW_THUMBNAILER_IGNORE_404'))
         set_attr('inserted_html', metadata.get('image-preview-thumbnailer-inserted-html') or settings.get('IMAGE_PREVIEW_THUMBNAILER_INSERTED_HTML'))
         set_attr('thumb_size', metadata.get('image-preview-thumbnailer-thumb-size') or settings.get('IMAGE_PREVIEW_THUMBNAILER_THUMB_SIZE'))
@@ -307,6 +310,9 @@ def http_get(url, config=PluginConfig()):
     with requests.get(url, timeout=config.timeout, verify=config.cert_verify,
                            headers={'User-Agent': config.user_agent}) as response:
         if response.status_code == 404 and config.ignore_404:
+            return None
+        if response.status_code != 200 and config.silent_http_errors:
+            LOGGER.error('%s HTTP error when fetching %s', response.status_code, url)
             return None
         if response.status_code != 200 and b'captcha' in response.content:
             LOGGER.warning('CAPTCHA is likely to be required by page %s', url)

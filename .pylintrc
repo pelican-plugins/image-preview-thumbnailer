@@ -2,4 +2,4 @@
 disable = consider-using-f-string, missing-docstring, multiple-imports, too-few-public-methods, too-many-instance-attributes
 
 [FORMAT]
-max-line-length = 150
+max-line-length = 180

@@ -113,11 +113,17 @@ def test_bare_jpg():
     assert 'src="thumbnails/shaman-previz.jpg"' in out_html
 
 @pytest.mark.integration
-def test_404():
+def test_silent_http_errors():
     url = 'https://example.com/404.jpg'
+    config = PluginConfig({'silent_http_errors': False})
     with pytest.raises(HTTPError) as exc_info:
-        process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
+        process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url), config)
     assert exc_info.value.response.status_code == 404
 
-    config = PluginConfig({'ignore_404': True})
+    process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
+
+@pytest.mark.integration
+def test_ignore_404():
+    url = 'https://example.com/404.jpg'
+    config = PluginConfig({'ignore_404': True, 'silent_http_errors': False})
     process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url), config)

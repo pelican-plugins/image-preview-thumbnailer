@@ -5,7 +5,7 @@ try:
 except ImportError:  # => Python 3.6
     from contextlib import suppress as nullcontext
 from tempfile import mkstemp
-from urllib.parse import unquote
+from urllib.parse import unquote, urljoin, urlparse
 
 from bs4 import BeautifulSoup
 from pelican import signals
@@ -274,17 +274,25 @@ def freesvg_download_img(url_match, config=PluginConfig()):
 
 def meta_img_downloader(url, config=PluginConfig()):
     img_url = _meta_img_url(url, config)
-    if not img_url or not img_url.startswith('http'):
+    if not img_url:
         return None
     safe_config = PluginConfig(config)  # copy
     # pylint: disable=attribute-defined-outside-init
     safe_config.ignore_404 = True
-    try:
-        out_filepath = download_img(img_url, safe_config)
-        LOGGER.debug("Image downloaded from: %s", img_url)
-        return out_filepath
-    except ConnectTimeout:
-        return None
+    if img_url.startswith('http'):
+        img_urls = [img_url]
+    else:  # relative URL: we join it to the current page location + the bare hostname
+        parsed = urlparse(url)
+        img_urls = [urljoin(url, img_url), urljoin(f"{parsed.scheme}://{parsed.netloc}", img_url)]
+    for img_url in img_urls:
+        try:
+            out_filepath = download_img(img_url, safe_config)
+            if out_filepath:
+                LOGGER.debug("Image downloaded from: %s", img_url)
+                return out_filepath
+        except ConnectTimeout:
+            pass
+    return None
 
 def _meta_img_url(url, config):
     resp = http_get(url, config)

@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.0.8] - not released yet
 ### Added
+* Adding support for relative image URL in `<meta>` section
 * `SILENT_HTTP_ERRORS` configuration entry, set to `True` by default
 ### Changed
 * now URL-decoding thumbnail filenames

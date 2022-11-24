@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from pelican import signals
 from PIL import Image
 import requests
-from requests.exceptions import ConnectTimeout
+from requests.exceptions import ConnectionError, ConnectTimeout
 from urllib3.exceptions import InsecureRequestWarning
 
 DEFAULT_CERT_VERIFY = True
@@ -19,7 +19,7 @@ DEFAULT_ENCODING = 'utf-8'
 DEFAULT_HTML_PARSER = 'html.parser'  # Alt: 'html5lib', 'lxml', 'lxml-xml'
 DEFAULT_SILENT_HTTP_ERRORS = True
 DEFAULT_IGNORE_404 = False
-DEFAULT_INSERTED_HTML = '<a href="{link}" target="_blank" class="preview-thumbnail"><img src="{thumb}" class="preview-thumbnail"></a>'
+DEFAULT_INSERTED_HTML = '<a href="{link}" target="_blank" class="preview-thumbnail"><img loading="lazy" src="{thumb}" class="preview-thumbnail"></a>'
 DEFAULT_SELECTOR = 'body'
 DEFAULT_THUMBS_DIR = 'thumbnails'
 DEFAULT_THUMB_SIZE = 300
@@ -220,7 +220,11 @@ def dafont_download_img(url_match, config=PluginConfig()):
 
 def deviantart_download_img(url_match, config=PluginConfig()):
     img_url = _meta_img_url(url_match.string, config)
-    if not img_url or img_url.endswith('noentrythumb-200.png'):  # displayed e.g. for mature content
+    if not img_url:
+        LOGGER.debug("Skipping %s: could not retrieve <meta> image", url_match.string)
+        return None
+    if img_url.endswith('noentrythumb-200.png'):
+        LOGGER.debug("Skipping %s: probable mature content", url_match.string)
         return None
     out_filepath = download_img(img_url, config)
     LOGGER.debug("Image downloaded from: %s", img_url)
@@ -290,7 +294,7 @@ def meta_img_downloader(url, config=PluginConfig()):
             if out_filepath:
                 LOGGER.debug("Image downloaded from: %s", img_url)
                 return out_filepath
-        except ConnectTimeout:
+        except (ConnectionError, ConnectTimeout):
             pass
     return None
 

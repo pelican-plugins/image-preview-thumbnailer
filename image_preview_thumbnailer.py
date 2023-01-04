@@ -1,4 +1,8 @@
-import logging, os, re, warnings
+#!/usr/bin/env python3
+# CLI USAGE:
+#  cd path/to/pelican/output/dir
+#  ./image_preview_thumbnailer.py path/to/page.html
+import logging, os, re, sys, warnings
 from glob import glob
 try:
     from contextlib import nullcontext
@@ -48,8 +52,7 @@ def process_all_links(path, context):
     config = PluginConfig.from_metadata(content.metadata, context)
     if not config:  # => this plugin has not been enabled on this page
         return
-    if not os.path.exists(config.fs_thumbs_dir()):
-        os.makedirs(config.fs_thumbs_dir(), exist_ok=True)
+    os.makedirs(config.fs_thumbs_dir(), exist_ok=True)
     with nullcontext() if config.cert_verify else warnings.catch_warnings():
         if not config.cert_verify:
             warnings.simplefilter('ignore', InsecureRequestWarning)
@@ -347,7 +350,23 @@ def register():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    html_filepath = sys.argv[1]
+    logging.basicConfig(format="%(asctime)s %(name)s [%(levelname)s] %(message)s",
+                        datefmt="%H:%M:%S", level=logging.DEBUG)
+    config = PluginConfig(dict(
+        selector='article ul ul, h2:nth-of-type(3) + ul, h2:nth-of-type(4) + ul',
+        except_urls='artvee.com,comicbookplus.com,pxfuel.com,deviantart.com/.+/gallery,artstation.com/[^/]+$',
+        silent_http_errors=False
+    ))
+    os.makedirs(config.fs_thumbs_dir(), exist_ok=True)
+    with nullcontext() if config.cert_verify else warnings.catch_warnings():
+        if not config.cert_verify:
+            warnings.simplefilter('ignore', InsecureRequestWarning)
+        with open(html_filepath, "r+", encoding=config.encoding) as html_file:
+            edited_html = process_all_links_in_html(html_file, config)
+            html_file.seek(0)
+            html_file.truncate()
+            html_file.write(edited_html)
     # URL = ...
     # URL_MATCH = re.compile(...).match(URL)
     # print(pixabay_download_img(URL_MATCH))

@@ -156,6 +156,8 @@ def process_link(img_downloader, anchor_tag, url_match, config=PluginConfig()):
             resize_as_thumbnail(tmp_thumb_filepath, config.thumb_size)
         fs_thumb_filepath = config.fs_thumbs_dir(thumb_filename + img_ext)
         os.rename(tmp_thumb_filepath, fs_thumb_filepath)
+        # Under Windows, I have sometime seen a bit of delay for this operation to be performed,
+        # which could trigger a FileNotFoundError on the line below, when calling getsize()
     if not os.path.getsize(fs_thumb_filepath):  # .none file, meaning no thumbnail could be donwloaded
         return
     rel_thumb_filepath = fs_thumb_filepath.replace(config.output_path + '/', '') if config.output_path else fs_thumb_filepath
@@ -358,6 +360,8 @@ if __name__ == '__main__':
         except_urls='artvee.com,comicbookplus.com,pxfuel.com,deviantart.com/.+/gallery,artstation.com/[^/]+$',
         silent_http_errors=False
     ))
+    if html_filepath.startswith("output/"):
+        config.output_path = "output/"
     os.makedirs(config.fs_thumbs_dir(), exist_ok=True)
     with nullcontext() if config.cert_verify else warnings.catch_warnings():
         if not config.cert_verify:

@@ -2,6 +2,7 @@
 # CLI USAGE:
 #  cd path/to/pelican/output/dir
 #  ./image_preview_thumbnailer.py path/to/page.html
+# pylint: disable=attribute-defined-outside-init,redefined-builtin,redefined-outer-name,use-dict-literal
 import logging, os, re, sys, warnings
 from glob import glob
 try:
@@ -145,10 +146,11 @@ def process_link(img_downloader, anchor_tag, url_match, config=PluginConfig()):
     if matching_filepaths:  # => a thumbnail has already been generated
         fs_thumb_filepath = matching_filepaths[0]
     else:
-        LOGGER.info("Thumbnail does not exist => downloading image from %s", anchor_tag['href'])
+        LOGGER.info("Thumbnail does not exist for %s => downloading image from %s", thumb_filename, anchor_tag['href'])
         tmp_thumb_filepath = img_downloader(url_match, config)
         if not tmp_thumb_filepath:  # => means the downloader failed to retrieve the image in a "supported" case
-            with open(config.fs_thumbs_dir(thumb_filename + '.none'), 'w', encoding='utf8'):
+            hostname = urlparse(anchor_tag['href']).netloc
+            with open(config.fs_thumbs_dir(f'{thumb_filename}.{hostname}.none'), 'w', encoding='utf8'):
                 pass
             return
         img_ext = os.path.splitext(tmp_thumb_filepath)[1]
@@ -158,7 +160,7 @@ def process_link(img_downloader, anchor_tag, url_match, config=PluginConfig()):
         os.rename(tmp_thumb_filepath, fs_thumb_filepath)
         # Under Windows, I have sometime seen a bit of delay for this operation to be performed,
         # which could trigger a FileNotFoundError on the line below, when calling getsize()
-    if not os.path.getsize(fs_thumb_filepath):  # .none file, meaning no thumbnail could be donwloaded
+    if not os.path.getsize(fs_thumb_filepath):  # .none file, meaning no thumbnail could be downloaded
         return
     rel_thumb_filepath = fs_thumb_filepath.replace(config.output_path + '/', '') if config.output_path else fs_thumb_filepath
     # Editing HTML on-the-fly to insert an <img> after the <a>:
@@ -331,8 +333,12 @@ def http_get(url, config=PluginConfig()):
         if response.status_code != 200 and config.silent_http_errors:
             LOGGER.error('%s HTTP error when fetching %s', response.status_code, url)
             return None
+        if response.status_code != 200:
+            LOGGER.debug(response.text)
         if response.status_code != 200 and b'captcha' in response.content:
             LOGGER.warning('CAPTCHA is likely to be required by page %s', url)
+        if response.status_code != 200 and b'CloudFront' in response.content:
+            LOGGER.warning('CloudFront is blocking request %s', url)
         response.raise_for_status()
         return response
 
@@ -351,9 +357,8 @@ def register():
     signals.content_written.connect(process_all_links)
 
 
-if __name__ == '__main__':
-    html_filepath = sys.argv[1]
-    logging.basicConfig(format="%(asctime)s %(name)s [%(levelname)s] %(message)s",
+def main(html_filepath):
+    logging.basicConfig(format="%(asctime)s [%(levelname)s] %(name)s (pid:%(process)s) %(message)s",
                         datefmt="%H:%M:%S", level=logging.DEBUG)
     config = PluginConfig(dict(
         selector='article ul ul, h2:nth-of-type(3) + ul, h2:nth-of-type(4) + ul',
@@ -375,3 +380,6 @@ if __name__ == '__main__':
     # URL_MATCH = re.compile(...).match(URL)
     # print(pixabay_download_img(URL_MATCH))
     # process_link(pixabay_download_img, {'href': URL}, URL_MATCH)
+
+if __name__ == '__main__':
+    main(sys.argv[1])

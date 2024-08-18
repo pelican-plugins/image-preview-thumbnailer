@@ -5,8 +5,14 @@
 
 [Pelican](https://getpelican.com) plugin that insert thumbnails along image links.
 
+> [!WARNING]
+> Since DeviantArt started using CloudFront in 2024, this plugin is not able to produce thumbnails for DeviantArt images.
+
+> However a tested workaround is to use TOR to bypass CloudFront and run the plugin manually on HTML files:
+> `torify path/to/image_preview_thumbnailer.py path/to/page.html`
+
 ## Demo page
-<https://chezsoi.org/lucas/blog/pages/images-libres-de-droits.html#fonts>
+<https://chezsoi.org/lucas/blog/pages/images-libres-de-droits.html>
 
 Source Markdown: [pages/images-libres-de-droits.md](https://github.com/Lucas-C/ludochaordic/blob/master/content/pages/images-libres-de-droits.md)
 

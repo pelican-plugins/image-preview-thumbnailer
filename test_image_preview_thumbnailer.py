@@ -18,7 +18,7 @@ BLOG_PAGE_TEMPLATE = """<html lang="en-US">
 </html>"""
 
 
-def setup():
+def setup_function():
     logging.root.setLevel(logging.DEBUG)
     LOGGER.disable_filter()  # disabling LimitFilter log deduping from pelican.log.FatalLogger
     thumbs_dir = PluginConfig().fs_thumbs_dir()
@@ -37,10 +37,10 @@ def test_artstation():
 
 @pytest.mark.integration
 def test_behance():
-    url = 'https://www.behance.net/gallery/58149803/Character-design-vol-8'
+    url = 'https://www.behance.net/gallery/26813509/everydays-may-2015'
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
-    assert os.path.getsize("thumbnails/Character-design-vol-8.jpg") > 0
-    assert 'src="thumbnails/Character-design-vol-8.jpg"' in out_html
+    assert os.path.getsize("thumbnails/everydays-may-2015.jpg") > 0
+    assert 'src="thumbnails/everydays-may-2015.jpg"' in out_html
 
 @pytest.mark.integration
 def test_dafont():
@@ -60,7 +60,7 @@ def test_deviantart():
 def test_deviantart_mature_content():
     url = 'https://www.deviantart.com/eggboy122/art/Angel-maybe-697980132'
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
-    assert os.path.getsize("thumbnails/Angel-maybe-697980132.none") == 0
+    assert os.path.getsize("thumbnails/Angel-maybe-697980132.www.deviantart.com.none") == 0
     assert '<img' not in out_html
 
 @pytest.mark.integration

@@ -150,7 +150,9 @@ def process_link(img_downloader, anchor_tag, url_match, config=PluginConfig()):
         tmp_thumb_filepath = img_downloader(url_match, config)
         if not tmp_thumb_filepath:  # => means the downloader failed to retrieve the image in a "supported" case
             hostname = urlparse(anchor_tag['href']).netloc
-            with open(config.fs_thumbs_dir(f'{thumb_filename}.{hostname}.none'), 'w', encoding='utf8'):
+            none_filename = f'{thumb_filename}.{hostname}.none'
+            LOGGER.info("Downloader could not retrieve image: now creating %s", none_filename)
+            with open(config.fs_thumbs_dir(none_filename), 'w', encoding='utf8'):
                 pass
             return
         img_ext = os.path.splitext(tmp_thumb_filepath)[1]

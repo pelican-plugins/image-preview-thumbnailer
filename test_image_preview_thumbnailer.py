@@ -92,6 +92,7 @@ def test_opengameart():
     assert 'src="thumbnails/kujasa-the-beginning.jpg"' in out_html
 
 @pytest.mark.integration
+@pytest.mark.wikiart
 def test_wikiart():
     url = 'https://www.wikiart.org/en/john-bauer/d-och-d-tog-tomten-tag-i-tyglarna'
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))

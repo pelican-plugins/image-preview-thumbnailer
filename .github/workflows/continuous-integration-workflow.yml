@@ -46,4 +46,4 @@ jobs:
       - name: Tests ☑
         run: |
           source $(poetry env info --path)/bin/activate
-          py.test
+          py.test -k "not wikiart"

@@ -1,14 +1,22 @@
-[tool.poetry]
+[project]
 name = "pelican-plugin-image-preview-thumbnailer"
 version = "1.0.8"
 description = "Pelican plugin that insert thumbnails along image links"
-authors = ["Lucas Cimon <lucas.cimon@gmail.com>"]
+requires-python = ">=3.10, <=3.14"
 license = "AGPL-3.0"
 readme = "README.md"
 keywords = ["pelican", "plugin", "image", "preview", "thumbnail"]
-repository = "https://github.com/pelican-plugins/image-preview-thumbnailer"
-packages = [{ include = "image_preview_thumbnailer.py" }]
 include = ["CHANGELOG.md", "README.md"]
+
+dependencies = [
+    "beautifulsoup4>=4.8.2",
+    "requests>=2.22.0",
+    "Pillow>=8.3.1"
+]
+
+authors = [
+  { name = "Lucas Cimon (@Lucas-C)" }
+]
 
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -16,32 +24,22 @@ classifiers = [
     "Framework :: Pelican",
     "Framework :: Pelican :: Plugins",
     "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: GNU Affero General Public License v3",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
-[tool.poetry.urls]
+repository = "https://github.com/pelican-plugins/image-preview-thumbnailer"
+
+[project.urls]
 "Documentation" = "https://docs.getpelican.com/"
 "Funding" = "https://donate.getpelican.com/"
 "Source" = "https://github.com/pelican-plugins/image-preview-thumbnailer"
 "Tracker" = "https://github.com/pelican-plugins/image-preview-thumbnailer/issues"
 
-[tool.poetry.dependencies]
-python = "^3.6"
-beautifulsoup4 = "^4.8.2"
-requests = "^2.22.0"
-Pillow = "^8.3.1"
-
-[tool.poetry.extras]
-markdown = ["markdown"]
+[tool.poetry]
+packages = [{ include = "image_preview_thumbnailer.py" }]
 
 [build-system]
 requires = ["poetry>=1.0"]

@@ -141,6 +141,9 @@ def process_all_links_in_html(html_file, config=PluginConfig()):
     return str(soup)
 
 def process_link(img_downloader, anchor_tag, url_match, config=PluginConfig()):
+    next_tag = anchor_tag.next_sibling
+    if next_tag and next_tag.name == 'a' and any('thumb' in _class for _class in next_tag['class']):
+        LOGGER.warning("Existing thumbnail image detected on anchor with href: %s", anchor_tag['href'])
     thumb_filename = extract_thumb_filename(anchor_tag['href'])
     matching_filepaths = glob(config.fs_thumbs_dir(thumb_filename + '.*'))
     if matching_filepaths:  # => a thumbnail has already been generated

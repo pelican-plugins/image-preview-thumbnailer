@@ -29,6 +29,7 @@ def test_extract_thumb_filename():
     assert extract_thumb_filename('https://pixabay.com/fr/vectors/femme-t%C3%A9l%C3%A9phone-portable-5716875/') == 'femme-téléphone-portable-5716875'
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="HTTP 403")
 def test_artstation():
     url = 'https://www.artstation.com/artwork/OvE8y'
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
@@ -36,6 +37,7 @@ def test_artstation():
     assert 'src="thumbnails/OvE8y.jpg"' in out_html
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="HTTP 403")
 def test_behance():
     url = 'https://www.behance.net/gallery/26813509/everydays-may-2015'
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
@@ -50,6 +52,7 @@ def test_dafont():
     assert 'src="thumbnails/mirage-gothic.font.png"' in out_html
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="HTTP 403")
 def test_deviantart():
     url = 'https://www.deviantart.com/deevad/art/Krita-texture-speedpainting-test-350472256'
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
@@ -78,6 +81,7 @@ def test_flickr_photostream():
     assert 'src="thumbnails/4860797836.jpg"' in out_html
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="HTTP 403")
 def test_itchio():
     url = 'https://lucas-c.itch.io/undying-dusk'
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
@@ -92,7 +96,7 @@ def test_opengameart():
     assert 'src="thumbnails/kujasa-the-beginning.jpg"' in out_html
 
 @pytest.mark.integration
-@pytest.mark.wikiart
+@pytest.mark.skip(reason="HTTP 403")
 def test_wikiart():
     url = 'https://www.wikiart.org/en/john-bauer/d-och-d-tog-tomten-tag-i-tyglarna'
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))

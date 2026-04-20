@@ -8,7 +8,7 @@ jobs:
     strategy:
       max-parallel: 5
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13'] #, '3.14']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v6
@@ -37,13 +37,7 @@ jobs:
           sudo apt install libjpeg-dev zlib1g-dev
           python -m pip install -U pip poetry
           poetry install
-          source $(poetry env info --path)/bin/activate
-          pip install -r dev-requirements.txt
       - name: Linter 🔎
-        run: |
-          source $(poetry env info --path)/bin/activate
-          pylint *.py
+        run: poetry run pylint *.py
       - name: Tests ☑
-        run: |
-          source $(poetry env info --path)/bin/activate
-          pytest
+        run: poetry run py.test

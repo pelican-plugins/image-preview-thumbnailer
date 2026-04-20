@@ -4,9 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.0.9] - Not released yet
+## [1.0.9] - 2026-04-20
 ### Added
 * now detecting if a thumbnail image has already been inserted, to avoid inserting it twice
+### Fixed
+* `Content-Type` containing a semicolon raised a `KeyError: 'image/jpeg;charset=UTF-8'`
 
 ## [1.0.8] - 2022-03-20
 ### Added

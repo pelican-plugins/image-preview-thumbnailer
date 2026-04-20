@@ -60,11 +60,13 @@ def test_deviantart():
     assert 'src="thumbnails/Krita-texture-speedpainting-test-350472256.jpg"' in out_html
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="HTTP 403 from GitHub runner")
 def test_deviantart_mature_content():
     url = 'https://www.deviantart.com/eggboy122/art/Angel-maybe-697980132'
     out_html = process_all_links_in_html(BLOG_PAGE_TEMPLATE.format(illustration_url=url))
-    assert os.path.getsize("thumbnails/Angel-maybe-697980132.www.deviantart.com.none") == 0
-    assert '<img' not in out_html
+    # This used to create a .none image, but seemingly DeviantArt behavior changed regarding mature content thumbnails
+    assert os.path.getsize("thumbnails/Angel-maybe-697980132.png") > 0
+    assert 'src="thumbnails/Angel-maybe-697980132.png' in out_html
 
 @pytest.mark.integration
 def test_flickr():

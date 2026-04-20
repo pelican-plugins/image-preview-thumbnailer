@@ -1,6 +1,6 @@
 [project]
 name = "pelican-plugin-image-preview-thumbnailer"
-version = "1.0.8"
+version = "1.0.9"
 description = "Pelican plugin that insert thumbnails along image links"
 requires-python = ">=3.10, <=3.14"
 license = "AGPL-3.0"
@@ -40,6 +40,11 @@ repository = "https://github.com/pelican-plugins/image-preview-thumbnailer"
 
 [tool.poetry]
 packages = [{ include = "image_preview_thumbnailer.py" }]
+
+[tool.poetry.group.dev.dependencies]
+pelican = "^4.11.0"
+pylint = "^4.0.4"
+pytest = "^9.0.2"
 
 [build-system]
 requires = ["poetry>=1.0"]

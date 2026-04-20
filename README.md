@@ -14,7 +14,7 @@
 ## Demo page
 <https://chezsoi.org/lucas/blog/pages/images-libres-de-droits.html>
 
-Source Markdown: [pages/images-libres-de-droits.md](https://github.com/Lucas-C/ludochaordic/blob/master/content/pages/images-libres-de-droits.md)
+Source Markdown: [pages/images-libres-de-droits.md](https://github.com/Lucas-C/ludochaordic/blob/master/content/pages/30-images-libres-de-droits.md)
 
 ## Usage instructions
 To enable this plugin:
@@ -128,7 +128,7 @@ To start contributing to this plugin, review the [Contributing to Pelican](https
 beginning with the **Contributing Code** section.
 
 ### Releasing a new version
-With a valid `~/.pypirc`:
+With a valid configuration in `~/.config/pypoetry/`:
 
 1. update `CHANGELOG.md`
 2. bump version in `pyproject.toml`

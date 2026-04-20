@@ -324,7 +324,10 @@ def download_img(url, config=PluginConfig()):
     resp = http_get(url, config)
     if not resp:
         return None
-    ext = EXT_PER_CONTENT_TYPE[resp.headers['Content-Type']]
+    content_type = resp.headers['Content-Type']
+    if ';' in content_type:
+        content_type = content_type.split(';', 1)[0]
+    ext = EXT_PER_CONTENT_TYPE[content_type]
     _, out_filepath = mkstemp(ext)
     with open(out_filepath, 'bw') as out_file:
         out_file.write(resp.content)

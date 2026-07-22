@@ -281,9 +281,9 @@ def freesvg_download_img(url_match, config=PluginConfig()):
     if not resp:
         return None
     soup = BeautifulSoup(resp.content, config.html_parser)
-    img = soup.select_one('.vec_veliki')
+    img = soup.select_one('.product-single-thumbnail')
     if not img:
-        raise RuntimeError('FreeSVG tag selector failed to find a .vec_veliki <img> on ' + url)
+        raise RuntimeError('FreeSVG tag selector failed to find a .product-single-thumbnail <img> on ' + url)
     out_filepath = download_img('https://freesvg.org' + img['src'], config)
     LOGGER.debug("Image downloaded from: %s", img['src'])
     return out_filepath
@@ -370,7 +370,7 @@ def main(html_filepath):
                         datefmt="%H:%M:%S", level=logging.DEBUG)
     config = PluginConfig(dict(
         selector='article ul ul, h2:nth-of-type(3) + ul, h2:nth-of-type(4) + ul',
-        except_urls='artvee.com,comicbookplus.com,pxfuel.com,deviantart.com/.+/gallery,artstation.com/[^/]+$',
+        except_urls='artvee.com,comicbookplus.com,pxfuel.com,deviantart.com/.+/gallery,artstation.com/[^/]+$i,hippopx.com',
         silent_http_errors=False
     ))
     if html_filepath.startswith("output/"):
